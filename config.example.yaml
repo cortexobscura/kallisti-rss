@@ -1,0 +1,34 @@
+# Copy to config.yaml; replace server/account/channel placeholders.
+server: https://chat.example.com
+origin: https://chat.example.com
+username: feedbot
+# Choose exactly one credential source. Pre-provision the account yourself.
+password_file: ./secrets/password
+# token_file: ./secrets/session-token
+database: ./data/feedbot.db
+poll_interval: 5m
+# Optional overrides keyed by configured Kallisti text-channel STORE IDs.
+# Values are 30s..24h; omitted channels use poll_interval.
+# channel_poll_intervals:
+#   1: 1m
+#   2: 15m
+# Closed by default. These are registered Mumble uint32 IDs, not names.
+admin_ids: []
+# Kallisti text-channel STORE IDs, not voice-channel IDs.
+channels: [1, 2]
+allow_http_feeds: false
+feeds:
+  - channel: 1
+    url: https://old.reddit.com/r/LiminalSpace/new.rss
+    max_images: 3
+  - channel: 2
+    url: https://aniyuki.com/category/avatars/feed/
+    max_images: 3
+# Optional YouTube Atom subscriptions (uncomment under feeds, choose a channel).
+# These publish title/link/summary/thumbnail only; initial poll baselines history.
+#  - channel: 1
+#    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCbRP3c757lWg9M-U7TyEkXA
+#    max_images: 1
+#  - channel: 1
+#    url: https://www.youtube.com/feeds/videos.xml?channel_id=UC1dv-WtuqqOcbaVRSv4nGYA
+#    max_images: 1

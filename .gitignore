@@ -1,0 +1,30 @@
+# Operator configuration and credentials; the public example stays visible.
+/config*.yaml
+!/config.example.yaml
+/secrets/
+.env
+.env.*
+*.key
+*.pem
+
+# Operational state, private exports, logs and backups.
+/data/
+/data-backup*/
+/backups/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+*.bak
+/unresolved.json
+/subscriptions.json
+/outbox*.json
+
+# Build and local verification output.
+/bin/
+/coverage.out
+/coverage*.html
+/.verification/
