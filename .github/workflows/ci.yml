@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+      - name: Verify release input exclusions
+        run: |
+          sh scripts/test-release-input-failures.sh
+          sh scripts/check-release-inputs.sh
+      - name: Run offline release checks
+        run: make release-check
+      - name: Check example configuration and compatibility binary
+        run: |
+          ./bin/kallisti-rss -config config.example.yaml -check-config
+          cmp bin/kallisti-rss bin/kallisti-feedbot
+      - name: Validate Compose
+        run: docker compose config --quiet
+      - name: Build fixture image
+        run: docker build -t kallisti-rss:test .
+      - name: Run network-disabled container fixture
+        run: docker run --rm --network=none --memory=512m --cpus=1 kallisti-rss:test -demo
