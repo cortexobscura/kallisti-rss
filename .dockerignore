@@ -1,0 +1,11 @@
+# Deny everything except the build's source and license inputs.
+**
+!go.mod
+!go.sum
+!cmd/kallisti-rss/*.go
+!internal/bot/*.go
+!LICENSE
+!THIRD_PARTY.md
+!licenses/*_LICENSE*
+!licenses/*_PATENTS
+!licenses/*_NOTICE
