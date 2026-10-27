@@ -122,7 +122,7 @@ Before building, run `sh scripts/check-release-inputs.sh` with Git, Docker and B
 
 Run the offline suite, then in a dedicated channel with your account: validate startup registration/channel IDs; confirm no backlog; publish one new RSS and one Atom item; verify expected images and plain summary; test an allowlisted add/pause/resume/remove and a denied user; restart and check no duplicate; disconnect during a send and reconcile the stable nonce; inspect blocked recovery using offline commands. Confirm TLS and Origin policy and test the built container separately. Record server revision, Go version and outcomes. A fixture pass does not substitute for this runtime interoperability test.
 
-See [SPEC.md](SPEC.md), [PROTOCOL.md](PROTOCOL.md), [SECURITY.md](SECURITY.md), and [THIRD_PARTY.md](THIRD_PARTY.md). No upstream project files, live credentials or downloaded feed/media bodies are included.
+See [SPEC.md](SPEC.md) for intended behavior, [ARCHITECTURE.md](ARCHITECTURE.md) for current structure, and [IMPLEMENTATION.md](IMPLEMENTATION.md) for evidence and known gaps. [PROTOCOL.md](PROTOCOL.md), [SECURITY.md](SECURITY.md), and [THIRD_PARTY.md](THIRD_PARTY.md) cover protocol, trust and licensing. No upstream project files, live credentials or downloaded feed/media bodies are included.
 
 ## Troubleshoot a feed warning
 
