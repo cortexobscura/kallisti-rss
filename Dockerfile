@@ -1,11 +1,14 @@
-FROM golang:1.27.3-bookworm AS build
+FROM golang:1.27.3-alpine3.24 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN cp /usr/local/go/LICENSE /GO-LICENSE
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /feedbot ./cmd/kallisti-rss
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM alpine:3.24
+RUN apk add --no-cache ca-certificates \
+    && addgroup -g 65532 nonroot \
+    && adduser -D -H -u 65532 -G nonroot -s /sbin/nologin nonroot
 COPY --from=build /feedbot /feedbot
 COPY LICENSE THIRD_PARTY.md /usr/share/doc/kallisti-rss/
 COPY licenses/ /usr/share/doc/kallisti-rss/licenses/

@@ -39,5 +39,18 @@ jobs:
         run: docker compose config --quiet
       - name: Build fixture image
         run: docker build -t kallisti-rss:test .
-      - name: Run network-disabled container fixture
-        run: docker run --rm --network=none --memory=512m --cpus=1 kallisti-rss:test -demo
+      - name: Verify Alpine runtime and run offline fixture
+        run: |
+          docker run --rm --network=none --read-only --cap-drop=ALL \
+            --security-opt=no-new-privileges:true --pids-limit=64 \
+            --memory=512m --cpus=1 --tmpfs /tmp:size=32m,mode=1777 \
+            --entrypoint /bin/sh kallisti-rss:test -ec '
+              test -s /etc/alpine-release
+              test "$(id -u)" = 65532
+              test "$(id -g)" = 65532
+              test -s /etc/ssl/certs/ca-certificates.crt
+              test -s /usr/share/doc/kallisti-rss/LICENSE
+              test -s /usr/share/doc/kallisti-rss/THIRD_PARTY.md
+              test -s /usr/share/doc/kallisti-rss/GO-LICENSE
+              exec /feedbot -demo
+            '

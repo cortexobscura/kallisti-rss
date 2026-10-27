@@ -105,7 +105,7 @@ For backup: stop the process, copy the entire data directory (including any WAL/
 
 ## Container and CI
 
-The Dockerfile builds a CGO-free Linux binary and runs as UID/GID 65532 with CA certificates. Compose drops capabilities, uses a read-only root, bounds CPU/memory/PIDs/logs, and has no inbound ports. Create config.container.yaml from the example with `database: /data/feedbot.db` and `password_file: /run/secrets/password`. Provision writable data and readable secret/config mounts for UID 65532; on Linux this normally requires an operator `chown` to that UID. Then run:
+Both Docker stages use Alpine 3.24. The builder uses Go 1.27.3 and produces a CGO-free Linux binary; the runtime installs CA certificates and runs as UID/GID 65532. Compose drops capabilities, uses a read-only root, bounds CPU/memory/PIDs/logs, and has no inbound ports. Create config.container.yaml from the example with `database: /data/feedbot.db` and `password_file: /run/secrets/password`. Provision writable data and readable secret/config mounts for UID 65532; on Linux this normally requires an operator `chown` to that UID. Then run:
 
 ```sh
 docker compose config

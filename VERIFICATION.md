@@ -150,3 +150,11 @@ Checks used a source-only copy under ignored `.verification/`, without copying o
 | Hosted GitHub Actions, live upstream interoperability, production mount permissions | UNRUN |
 
 The four Make targets above are the constituents of `make release-check`; they were run sequentially rather than invoking the aggregate target. No application code or runtime state changed. No live feed/account access, messages, credentials, commit, push or deployment was performed. The local Docker result does not certify a production Compose installation or live upstream interoperability.
+
+## Alpine container verification
+
+Both stages now use Alpine 3.24: `golang:1.27.3-alpine3.24` builds the unchanged CGO-free executable, and `alpine:3.24` supplies the runtime. CA certificates are installed explicitly. The runtime retains UID/GID 65532, `/feedbot`, `/data`, the existing config argument and all first-party, dependency and Go toolchain notices. Compose service names, mounts and restrictions are unchanged.
+
+Local image build and Compose validation passed. The offline demo also passed with networking disabled, a read-only root, all capabilities dropped, no-new-privileges, 64 PIDs, 512 MiB RAM, one CPU and a 32 MiB `/tmp` filesystem. It reported pending=0, blocked=0, delivered=2. Runtime assertions verified Alpine, UID/GID 65532, the CA bundle and license notices. GitHub CI now runs these assertions and the same hardened fixture.
+
+These checks use synthetic content without live config, credentials, database mounts or upstream account access. They do not establish production mount permissions or live interoperability. Hosted verification of this Alpine change remains separate from the local result.
