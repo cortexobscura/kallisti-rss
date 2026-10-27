@@ -1,6 +1,6 @@
 # kallisti-rss
 
-Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures pass; hosted CI and a recorded upstream runtime acceptance run remain release gates. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
+Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; a recorded upstream runtime acceptance run remains a release gate. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
 
 ## Start with the offline demo
 
@@ -114,7 +114,7 @@ docker compose run --rm --no-deps feedbot -demo
 docker compose up -d
 ```
 
-The original build report did not execute Docker; see [VERIFICATION.md](VERIFICATION.md) for later local results. The GitHub workflow in `.github/workflows/ci.yml` runs `make release-check`, validates the example config and compatibility binary, validates Compose, and builds/runs the demo image with external networking disabled for the demo. Actions use pinned commits and read-only repository permissions on GitHub-hosted runners. No image publication or deployment is configured, and no Gitea workflow is supplied. Hosted execution remains unverified until an actual Actions run succeeds; required-check branch protection must be configured by the repository owner.
+The original build report did not execute Docker; see [VERIFICATION.md](VERIFICATION.md) for later local results. The GitHub workflow in `.github/workflows/ci.yml` runs `make release-check`, validates the example config and compatibility binary, validates Compose, and builds/runs the demo image with external networking disabled for the demo. Actions use pinned commits and read-only repository permissions on GitHub-hosted runners. No image publication or deployment is configured, and no Gitea workflow is supplied. A successful hosted run is recorded in VERIFICATION.md; it does not verify live interoperability or production mounts. Required-check branch protection must be configured by the repository owner.
 
 Before building, run `sh scripts/check-release-inputs.sh` with Git, Docker and Buildx available. It verifies Git exclusions and Docker's build-context filtering using synthetic files. `.dockerignore` admits only Go source, module files and license notices; configuration, credentials, databases and backups must stay outside the build context. Preserve the dotfiles when copying the source. `.gitignore` protects conventional untracked operational paths, not already tracked files or every custom filename. Review all staged content before publishing. Base images still use tags rather than pinned digests.
 

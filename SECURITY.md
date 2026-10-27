@@ -10,7 +10,7 @@ The database lock is advisory and intended for one cooperative process on a loca
 
 No security claim depends solely on test coverage. See VERIFICATION.md for parser/SSRF/authorization/durability tests, security scanner versions and limitations. Gosec suppressions are narrow comments for operator-selected file paths and checked frame-size conversion; no rule is globally disabled. Synthetic demo credentials are intentionally non-secret and used only by its ephemeral loopback server.
 
-For suspected issues, avoid sending tokens, private config, databases or URL query secrets in public reports. Reproduce using synthetic fixtures where possible. This unpublished bundle has no maintainer contact yet; the future repository owner should set a private reporting channel before public release.
+For suspected issues, avoid sending tokens, private config, databases or URL query secrets in public reports. Reproduce using synthetic fixtures where possible. No private reporting channel is documented here; the repository owner should publish one. Repository publication and passing CI do not establish that this channel exists.
 
 
 Delivery failures now use a closed set of local classifications derived from the pinned upstream error contract, only after exact nonce matching. Mismatched-channel/uncorrelated/unknown errors cannot bypass global failure handling. Error strings are converted to controlled labels within a 1024-byte encoded bound and discarded; echo text, credentials and arbitrary server text are never logged. Persistent retry metadata holds only job IDs, attempt counts/times and controlled labels. Quarantine is a per-channel ordering barrier, not an automatic discard. Operator reconciliation remains required for uncertain old work.

@@ -1,6 +1,6 @@
 # Verification report — 2026-10-26
 
-The original macOS results below are historical. See **Linux release-input repair** below for current packaging, GitHub workflow and local Docker evidence; earlier Docker-unrun statements describe the original host.
+The original macOS results below are historical. See **Linux release-input repair**, **Alpine container verification** and **Hosted GitHub verification** below for later packaging, Docker and CI evidence. Earlier unrun statements describe their original host and revision, not the latest result.
 
 Outcome: implemented review candidate, with successful offline acceptance checks. This report distinguishes local fixture evidence from live/runtime interoperability. No credentials were generated for a real account, no live messages sent, no deployments or repository pushes performed. All implementation work stayed in this new project; Cofe and Sigil were untouched.
 
@@ -157,4 +157,12 @@ Both stages now use Alpine 3.24: `golang:1.27.3-alpine3.24` builds the unchanged
 
 Local image build and Compose validation passed. The offline demo also passed with networking disabled, a read-only root, all capabilities dropped, no-new-privileges, 64 PIDs, 512 MiB RAM, one CPU and a 32 MiB `/tmp` filesystem. It reported pending=0, blocked=0, delivered=2. Runtime assertions verified Alpine, UID/GID 65532, the CA bundle and license notices. GitHub CI now runs these assertions and the same hardened fixture.
 
-These checks use synthetic content without live config, credentials, database mounts or upstream account access. They do not establish production mount permissions or live interoperability. Hosted verification of this Alpine change remains separate from the local result.
+These checks use synthetic content without live config, credentials, database mounts or upstream account access. They do not establish production mount permissions or live interoperability. Hosted verification of this Alpine change is recorded separately below.
+
+## Hosted GitHub verification
+
+[Actions run 40424382007](https://github.com/cortexobscura/kallisti-rss/actions/runs/40424382007) completed successfully on 2026-10-27 at 00:11:15 UTC for commit `28f1a0d96a770a56a9d3cd1a9cdd1613a1afd45d`. The run's job/step results were inspected during reverse blueprinting; all acceptance steps reported success.
+
+Passed: synthetic release-input failure regression and Docker context checks; `make release-check`; example configuration and compatibility-binary comparison; Compose validation; Alpine image build; runtime UID/GID, CA and notice assertions; hardened network-disabled demo. The workflow did not publish an image or deploy.
+
+This receipt establishes hosted verification of that committed implementation, not future edits or the new uncommitted blueprint documentation. It does not establish required-check branch protection, production mount permissions or live upstream interoperability. Historical unrun rows above remain unchanged as records of earlier checks.
