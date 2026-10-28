@@ -116,3 +116,14 @@ Use Go 1.27.3 or newer with the pinned module graph. The CGO-free binary embeds 
 `make release-check` comprises `make check`, `make serve-demo`, `make fuzz` and `make security`. These run formatting verification, vet, race/unit/integration tests, native build, credential-free demo, ten-second parser fuzzing, govulncheck and gosec. Packaging additionally runs both scripts under `scripts/`, example-config validation, compatibility-binary comparison, Compose validation and an Alpine build with the hardened network-disabled demo. GitHub CI executes these underlying checks; it does not publish or deploy. Docker builder and runtime use Alpine 3.24, preserving UID/GID 65532, CA certificates and license notices.
 
 A change is complete only when its affected acceptance scenarios and the required offline gates pass, with failed/unrun checks reported separately. Keep tests for authorization rejection, transaction rollback, no backlog, immutable retries, ordering barriers, restart and cancellation. A passing suite, coverage figure or owner report does not establish upstream interoperability. Release/deployment verification additionally requires the recorded dedicated-channel workflow in README, explicit owner authorization and production mount-permission checks. Preserve original fixtures and third-party notices; do not weaken invariants to make a check pass.
+
+
+## Deployment templates
+
+`deploy/docker` and `deploy/kubernetes` supply operator-facing installation and
+recovery instructions with container-path configuration examples. The root
+Compose entry point remains supported. Kubernetes is single-replica with
+Recreate updates and exclusive persistent storage suitable for SQLite; it adds
+no application networking, health endpoint or multi-replica support. Credentials
+remain externally provisioned. `make check-deploy` validates template rendering
+and schemas, not a live cluster or upstream installation.

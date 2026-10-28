@@ -93,3 +93,12 @@ Logs expose controlled diagnostics, IDs, counts and feed host plus a short URL h
 [compose.yaml](compose.yaml) supplies one `feedbot` service: read-only root, no capabilities, no-new-privileges, 64 PIDs, 512 MiB RAM, one CPU, a 32 MiB `/tmp`, private operator-provided mounts and no published ports. The image has no operational config or credentials. Production mount permissions and runtime connectivity require separate operator verification.
 
 The source-only [.dockerignore](.dockerignore) is tested with synthetic decoy secrets and Docker's actual context export. The [GitHub workflow](.github/workflows/ci.yml) runs the same release checks, packaging regressions, config/binary checks, Compose validation and hardened offline container demo. It has read-only repository permissions, pinned actions and no publish/deploy step. Images use version tags rather than digest pins; reproducible image bytes are not promised.
+
+Deployment templates also live in [deploy/docker](deploy/docker/README.md) and
+[deploy/kubernetes](deploy/kubernetes/README.md). The Docker layout builds the
+root Dockerfile and preserves the same runtime paths; the root Compose file
+remains compatible with existing installs. Kubernetes uses a single-replica
+Recreate Deployment, a ReadWriteOncePod PVC, generated configuration and an
+operator-managed Secret. No runtime listener or health probe is added.
+`make check-deploy` validates example configs, Compose and Kubernetes schemas;
+cluster storage, permissions and interoperability still need operator testing.

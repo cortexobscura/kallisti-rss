@@ -1,0 +1,18 @@
+# Copy to config.yaml and set your existing account and channel store IDs.
+server: https://chat.example.com
+origin: https://chat.example.com
+username: feedbot
+password_file: /run/secrets/password
+database: /data/feedbot.db
+poll_interval: 5m
+# Optional per-channel overrides (30s..24h):
+# channel_poll_intervals:
+#   1: 1m
+admin_ids: [] # Verified registered account IDs; closed by default.
+channels: [1]
+allow_http_feeds: false
+feeds: [] # Add public RSS/Atom URLs; first successful fetch records no backlog.
+# feeds:
+#   - channel: 1
+#     url: https://example.com/feed.xml
+#     max_images: 3

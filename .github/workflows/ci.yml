@@ -35,8 +35,8 @@ jobs:
         run: |
           ./bin/kallisti-rss -config config.example.yaml -check-config
           cmp bin/kallisti-rss bin/kallisti-feedbot
-      - name: Validate Compose
-        run: docker compose config --quiet
+      - name: Validate deployment templates
+        run: sh scripts/check-deploy.sh
       - name: Build fixture image
         run: docker build -t kallisti-rss:test .
       - name: Verify Alpine runtime and run offline fixture

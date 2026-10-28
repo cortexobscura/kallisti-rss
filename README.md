@@ -105,14 +105,22 @@ For backup: stop the process, copy the entire data directory (including any WAL/
 
 ## Container and CI
 
-Both Docker stages use Alpine 3.24. The builder uses Go 1.27.3 and produces a CGO-free Linux binary; the runtime installs CA certificates and runs as UID/GID 65532. Compose drops capabilities, uses a read-only root, bounds CPU/memory/PIDs/logs, and has no inbound ports. Create config.container.yaml from the example with `database: /data/feedbot.db` and `password_file: /run/secrets/password`. Provision writable data and readable secret/config mounts for UID 65532; on Linux this normally requires an operator `chown` to that UID. Then run:
+Deployment guides and editable examples are available in:
 
-```sh
-docker compose config
-docker compose build
-docker compose run --rm --no-deps feedbot -demo
-docker compose up -d
-```
+- [deploy/docker](deploy/docker/README.md): Compose, container config example,
+  optional image settings, persistent data and credential mounts.
+- [deploy/kubernetes](deploy/kubernetes/README.md): Kustomize, a single-replica
+  Deployment, PVC, ConfigMap generation and separately managed credentials.
+
+Both use the root Alpine Dockerfile and UID/GID 65532, with a read-only root,
+resource bounds and no inbound service. No public image is assumed; build your
+own. The root `compose.yaml` remains compatible with existing installs using
+`config.container.yaml`; new installs can follow the Docker directory guide.
+
+Run `make check-deploy` to validate both Compose files, deployment configuration
+examples and rendered Kubernetes schemas using synthetic/public inputs. This
+requires Docker Compose and Go; pinned Kustomize/kubeconform tools and schemas
+may be downloaded. It does not contact a cluster or start a production service.
 
 The original build report did not execute Docker; see [VERIFICATION.md](VERIFICATION.md) for later local results. The GitHub workflow in `.github/workflows/ci.yml` runs `make release-check`, validates the example config and compatibility binary, validates Compose, and builds/runs the demo image with external networking disabled for the demo. Actions use pinned commits and read-only repository permissions on GitHub-hosted runners. No image publication or deployment is configured, and no Gitea workflow is supplied. A successful hosted run is recorded in VERIFICATION.md; it does not verify live interoperability or production mounts. Required-check branch protection must be configured by the repository owner.
 

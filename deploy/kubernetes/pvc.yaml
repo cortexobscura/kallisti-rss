@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kallisti-rss-data
+spec:
+  # Requires a CSI driver supporting ReadWriteOncePod and local filesystem semantics.
+  accessModes: [ReadWriteOncePod]
+  volumeMode: Filesystem
+  # storageClassName: your-block-storage-class
+  resources:
+    requests:
+      storage: 1Gi

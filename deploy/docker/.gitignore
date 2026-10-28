@@ -1,0 +1,5 @@
+/config.yaml
+/secrets/
+/data/
+/backups/
+!/.env.example

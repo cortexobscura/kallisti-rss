@@ -1,4 +1,4 @@
-.PHONY: deps fmt vet test test-race fuzz security build check serve-demo docker release-check
+.PHONY: deps fmt vet test test-race fuzz security build check serve-demo docker release-check check-deploy
 GO ?= go
 GOVULNCHECK_VERSION ?= v1.9.0
 GOSEC_VERSION ?= v2.30.0
@@ -30,3 +30,6 @@ docker:
 	docker build -t kallisti-rss:local .
 
 release-check: check serve-demo fuzz security
+
+check-deploy: build
+	sh scripts/check-deploy.sh

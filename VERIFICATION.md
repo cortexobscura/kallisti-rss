@@ -1,5 +1,37 @@
 # Verification report — 2026-10-26
 
+## Deployment layout verification — 2026-10-28
+
+Added Docker Compose and Kubernetes Kustomize operator layouts under `deploy/`,
+without changing application code, database schema or the existing root Compose
+entry point. Examples contain no operational credentials. Kubernetes uses one
+replica, Recreate updates and a ReadWriteOncePod PVC; actual CSI/storage support
+must be verified on the target cluster.
+
+Local Linux results for this change:
+
+- `make check`, `make serve-demo`, and `make fuzz`: PASS; CLI/core race coverage
+  38.7%/83.9%, demo pending=0 blocked=0 delivered=2, 46,410 fuzz executions.
+- The aggregate `make release-check` was interrupted during govulncheck with
+  `signal: terminated`; it did not pass as a whole. A separate `make security`
+  rerun passed: no affected vulnerability calls, gosec zero issues with five
+  existing suppressions. Govulncheck noted two imported-package vulnerabilities
+  without affected calls.
+- `sh scripts/check-deploy.sh`: PASS; both Compose files and example configs,
+  Kustomize v5.8.1 rendering, kubeconform v0.7.0 strict Kubernetes 1.35.0 schemas
+  (five resources valid, none skipped). No cluster API was contacted.
+- Both release-input scripts: PASS, including nested deployment config, secret,
+  data and rendered-manifest exclusions and actual Docker context export.
+- Build through `deploy/docker/compose.yaml`: PASS. Built image's hardened,
+  network-disabled synthetic demo: PASS, pending=0 blocked=0 delivered=2.
+- Shell syntax, actionlint v1.7.12, deployment path/hardening assertions and
+  `git diff --check`: PASS.
+
+UNRUN: Kubernetes server-side validation and runtime deployment, CSI mount and
+secret permissions, production Compose mounts, live upstream interoperability,
+and hosted CI for these changes. No credentials were provisioned, live messages
+sent, cluster resources created, repository pushed or service deployed.
+
 The original macOS results below are historical. See **Linux release-input repair**, **Alpine container verification** and **Hosted GitHub verification** below for later packaging, Docker and CI evidence. Earlier unrun statements describe their original host and revision, not the latest result.
 
 Outcome: implemented review candidate, with successful offline acceptance checks. This report distinguishes local fixture evidence from live/runtime interoperability. No credentials were generated for a real account, no live messages sent, no deployments or repository pushes performed. All implementation work stayed in this new project; Cofe and Sigil were untouched.
