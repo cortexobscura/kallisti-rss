@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -269,21 +270,32 @@ func (e *Engine) Command(ctx context.Context, m Message) error {
 		if len(a) == 3 {
 			id, er := strconv.ParseInt(a[2], 10, 64)
 			if er == nil {
-				field := "paused=1"
-				if a[1] == "remove" {
-					field = "deleted=1"
-				}
-				if a[1] == "resume" {
-					field = "paused=0"
-				}
-				r, er := tx.Exec("UPDATE subscriptions SET "+field+" WHERE id=? AND channel=? AND deleted=0", id, m.Channel)
-				if er != nil {
+				var paused bool
+				er = tx.QueryRow("SELECT paused FROM subscriptions WHERE id=? AND channel=? AND deleted=0", id, m.Channel).Scan(&paused)
+				switch {
+				case errors.Is(er, sql.ErrNoRows):
+					reply = "No matching subscription in this channel."
+				case er != nil:
 					return er
-				}
-				n, _ := r.RowsAffected()
-				reply = "No matching subscription in this channel."
-				if n > 0 {
-					reply = "Subscription updated. Already queued posts remain in the outbox."
+				case a[1] == "pause" && paused:
+					reply = fmt.Sprintf("Subscription %d is already paused; nothing changed.", id)
+				case a[1] == "resume" && !paused:
+					reply = fmt.Sprintf("Subscription %d is already active; nothing changed.", id)
+				default:
+					field, done := "paused=1", "paused"
+					if a[1] == "remove" {
+						field, done = "deleted=1", "removed"
+					}
+					if a[1] == "resume" {
+						field, done = "paused=0", "resumed"
+					}
+					if _, er = tx.Exec("UPDATE subscriptions SET "+field+" WHERE id=?", id); er != nil {
+						return er
+					}
+					reply = fmt.Sprintf("Subscription %d %s.", id, done)
+					if a[1] != "resume" {
+						reply += " Already queued posts remain in the outbox."
+					}
 				}
 			}
 		}

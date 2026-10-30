@@ -151,3 +151,35 @@ func TestSharedCacheBoundKeepsSubscriptionOrder(t *testing.T) {
 		}
 	}
 }
+
+// Repeated pause/resume must say the subscription was already in that state
+// instead of reporting a change that did not happen.
+func TestPauseResumeReportsCurrentState(t *testing.T) {
+	s := testStore(t)
+	admin := uint32(42)
+	ctx := context.Background()
+	e := Engine{Config: Config{Channels: []int64{1, 2}, Admins: []uint32{admin}}, Store: s}
+	must(t, s.Seed([]Seed{{Channel: 1, URL: "https://example.com/feed"}}))
+	none := "No matching subscription in this channel."
+	for i, c := range []struct {
+		channel    int64
+		text, want string
+	}{
+		{1, "!feed resume 1", "Subscription 1 is already active; nothing changed."},
+		{1, "!feed pause 1", "Subscription 1 paused. Already queued posts remain in the outbox."},
+		{1, "!feed pause 1", "Subscription 1 is already paused; nothing changed."},
+		{2, "!feed resume 1", none}, // another channel cannot see or change it
+		{1, "!feed resume 1", "Subscription 1 resumed."},
+		{1, "!feed resume 1", "Subscription 1 is already active; nothing changed."},
+		{1, "!feed pause 9", none},
+		{1, "!feed remove 1", "Subscription 1 removed. Already queued posts remain in the outbox."},
+		{1, "!feed resume 1", none},
+	} {
+		must(t, e.Command(ctx, Message{ID: int64(i + 1), Channel: c.channel, AuthorID: &admin, Verified: true, Text: c.text}))
+		jobs, err := s.Inspect()
+		must(t, err)
+		if got := jobs[len(jobs)-1].Payload.Text; got != c.want {
+			t.Fatalf("step %d %q: reply %q, want %q", i, c.text, got, c.want)
+		}
+	}
+}
