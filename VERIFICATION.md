@@ -1,5 +1,46 @@
 # Verification report — 2026-10-26
 
+## Compose shore-up verification — 2026-10-30
+
+Both Compose files now set `entrypoint: ["/feedbot", "-config",
+"/config/config.yaml"]`. Previously `docker compose run feedbot -status` replaced
+the image CMD, so the binary read `/data/config.yaml` and failed with
+`open config.yaml: no such file or directory` (reproduced against the built
+image). `docker compose up` behavior is unchanged. No application code, schema
+or image definition changed.
+
+Local Linux results (Go 1.27.3, Docker Compose 5.5.1):
+
+- `make check`, `make serve-demo`, `make fuzz`: PASS; CLI/core coverage
+  38.7%/83.9%, demo pending=0 blocked=0 delivered=2, 67,064 fuzz executions.
+- `make security`: PASS when run with `GOGC=20 GOMEMLIMIT=700MiB GOMAXPROCS=2`;
+  govulncheck found no called vulnerabilities (two in imported packages without
+  affected calls), gosec zero issues with five existing suppressions. Without
+  those limits the host's earlyoom daemon sent SIGTERM to govulncheck at about
+  1.2 GiB RSS on a host with roughly 2 GiB available; this explains the earlier
+  `signal: terminated` result and is not a code finding.
+- `make check-deploy`: PASS (both Compose files, example configs, five
+  Kubernetes resources valid).
+- New `make check-compose` (`scripts/check-compose-runtime.sh`) against a fresh
+  `make docker` image: PASS. With synthetic config and `network_mode: none` it
+  verified `-check-config`, `-status` and `-subscriptions` through
+  `docker compose run`, database creation as UID 65532 on the bind mount,
+  `database already in use` from an offline action while the service ran, and
+  exit 0 within the grace period after SIGTERM. With the entrypoint line
+  removed the script fails on the original error, confirming it detects the bug.
+- README recipes: the in-namespace `chown` produced 65532:65532 ownership of
+  data, config and secret files; the documented SELinux override merges by
+  mount target (three mounts, all `selinux: Z`). SELinux and rootless hosts
+  were not available, so label enforcement and subordinate-UID mapping are
+  UNRUN.
+- shellcheck, actionlint v1.7.12, both release-input scripts and
+  `git diff --check`: PASS.
+
+UNRUN: hosted CI for this branch until the pull request runs, production
+mounts, credentials, `-discover`/`-check-feeds` against real services, and live
+upstream interoperability. No credentials were used, messages sent or services
+deployed.
+
 ## Deployment layout verification — 2026-10-28
 
 Added Docker Compose and Kubernetes Kustomize operator layouts under `deploy/`,
