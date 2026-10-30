@@ -247,23 +247,9 @@ func (e *Engine) Command(ctx context.Context, m Message) error {
 	switch a[1] {
 	case "add":
 		if len(a) == 3 {
-			if _, err := ValidateURL(a[2], e.Config.AllowHTTP); err != nil {
-				reply = "Feed URL rejected."
-			} else {
-				var n int
-				err = tx.QueryRow("SELECT count(*) FROM subscriptions WHERE deleted=0").Scan(&n)
-				if err != nil {
-					return err
-				}
-				if n >= 100 {
-					reply = "Subscription limit reached."
-				} else {
-					_, err = tx.Exec("INSERT INTO subscriptions(channel,url) VALUES(?,?) ON CONFLICT(channel,url) DO UPDATE SET deleted=0,paused=0", m.Channel, a[2])
-					if err != nil {
-						return err
-					}
-					reply = "Subscribed. New subscriptions baseline current entries; restored subscriptions retain seen history."
-				}
+			reply, err = e.addSubscription(tx, m.Channel, a[2])
+			if err != nil {
+				return err
 			}
 		}
 	case "remove", "pause", "resume":
@@ -325,4 +311,50 @@ func (e *Engine) Command(ctx context.Context, m Message) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// addSubscription creates, restores or reports the (channel, URL) subscription
+// and returns the chat reply. An active subscription, paused or not, is left
+// unchanged so that add never silently resumes polling.
+func (e *Engine) addSubscription(tx *sql.Tx, channel int64, raw string) (string, error) {
+	if _, err := ValidateURL(raw, e.Config.AllowHTTP); err != nil {
+		if _, er := strconv.ParseInt(raw, 10, 64); er == nil {
+			return "!feed add takes a feed URL, not an ID. To restore a removed subscription, add its URL again.", nil
+		}
+		return "Feed URL rejected.", nil
+	}
+	var id int64
+	var paused, deleted bool
+	err := tx.QueryRow("SELECT id,paused,deleted FROM subscriptions WHERE channel=? AND url=?", channel, raw).Scan(&id, &paused, &deleted)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return "", err
+	}
+	exists := err == nil
+	if exists && !deleted {
+		if paused {
+			return fmt.Sprintf("Subscription %d already exists and is paused; nothing changed. Use !feed resume %d to resume it.", id, id), nil
+		}
+		return fmt.Sprintf("Subscription %d already exists; nothing changed.", id), nil
+	}
+	var n int
+	if err = tx.QueryRow("SELECT count(*) FROM subscriptions WHERE deleted=0").Scan(&n); err != nil {
+		return "", err
+	}
+	if n >= 100 {
+		return "Subscription limit reached.", nil
+	}
+	if exists {
+		if _, err = tx.Exec("UPDATE subscriptions SET deleted=0,paused=0 WHERE id=?", id); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("Subscription %d restored with its seen history. Entries it has not seen that are still in the feed may post.", id), nil
+	}
+	r, err := tx.Exec("INSERT INTO subscriptions(channel,url) VALUES(?,?)", channel, raw)
+	if err != nil {
+		return "", err
+	}
+	if id, err = r.LastInsertId(); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("Subscription %d added. Its first poll records current entries without posting them.", id), nil
 }
