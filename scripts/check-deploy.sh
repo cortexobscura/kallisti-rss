@@ -17,7 +17,15 @@ for file in kustomization.yaml namespace.yaml deployment.yaml pvc.yaml networkpo
     cp "deploy/kubernetes/$file" "$work/kubernetes/$file"
 done
 cp deploy/kubernetes/config.example.yaml "$work/kubernetes/config.yaml"
+cp -R deploy/kubernetes/components "$work/kubernetes/components"
 go run sigs.k8s.io/kustomize/kustomize/v5@v5.8.1 build "$work/kubernetes" > "$work/rendered.yaml"
 go run github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0 \
     -strict -summary -kubernetes-version 1.35.0 "$work/rendered.yaml"
+
+# Render again with the optional egress component enabled.
+printf 'components:\n  - components/egress-public\n' >> "$work/kubernetes/kustomization.yaml"
+go run sigs.k8s.io/kustomize/kustomize/v5@v5.8.1 build "$work/kubernetes" > "$work/rendered-egress.yaml"
+grep -q 'name: kallisti-rss-egress' "$work/rendered-egress.yaml"
+go run github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0 \
+    -strict -summary -kubernetes-version 1.35.0 "$work/rendered-egress.yaml"
 printf 'Compose, example config and Kubernetes schema validation passed.\n'

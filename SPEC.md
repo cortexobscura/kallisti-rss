@@ -123,7 +123,9 @@ A change is complete only when its affected acceptance scenarios and the require
 `deploy/docker` and `deploy/kubernetes` supply operator-facing installation and
 recovery instructions with container-path configuration examples. The root
 Compose entry point remains supported. Kubernetes is single-replica with
-Recreate updates and exclusive persistent storage suitable for SQLite; it adds
+Recreate updates and a ReadWriteOnce local-filesystem volume suitable for
+SQLite; the single replica, Recreate and the database file lock keep one
+writer, and ReadWriteOncePod is optional CSI-only hardening. It adds
 no application networking, health endpoint or multi-replica support. Credentials
 remain externally provisioned. `make check-deploy` validates template rendering
 and schemas, not a live cluster or upstream installation.

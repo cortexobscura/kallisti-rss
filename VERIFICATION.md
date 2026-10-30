@@ -1,5 +1,34 @@
 # Verification report — 2026-10-26
 
+## Kubernetes portable defaults — 2026-10-30
+
+The Kubernetes template previously required a CSI driver supporting
+`ReadWriteOncePod` and named no storage class. Non-CSI node-local provisioners
+such as Rancher local-path (used by the owner's target cluster, whose only app
+class `local-path-retain` is not the default) cannot provide that access mode,
+and a claim without a class stays `Pending` where there is no default. The PVC
+now uses `ReadWriteOnce` with a documented `storageClassName` placeholder; one
+writer remains enforced by the single replica, `Recreate` and the database file
+lock. The namespace enforces the restricted Pod Security Standard. An optional
+`components/egress-public` Kustomize component limits egress to cluster DNS
+and public IPv4 TCP 80/443. The README documents unique tags or digests for
+image updates. No application code, image or Compose file changed.
+
+Local Linux results:
+
+- `make check-deploy`: PASS; the base render (five resources) and a second
+  render with the egress component enabled (six resources) both pass
+  kubeconform v0.7.0 strict Kubernetes 1.35.0 schemas. The rendered policy is
+  in the `kallisti-rss` namespace and selects the bot's pod label.
+- `make check`, `make serve-demo`, `make fuzz`: PASS. `make security` with
+  `GOGC=20 GOMEMLIMIT=700MiB GOMAXPROCS=2`: PASS.
+- shellcheck, both release-input scripts and `git diff --check`: PASS.
+
+UNRUN: server-side dry run and an actual deployment on any cluster (no
+kubectl context was configured), local-path binding and `fsGroup` ownership on
+the target node, CNI enforcement of the egress component, and hosted CI until
+the pull request runs.
+
 ## Command flood and feed backlog remediation — 2026-10-30
 
 Two availability gaps found in review were reproduced with new tests before

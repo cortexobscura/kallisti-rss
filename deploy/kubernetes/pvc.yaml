@@ -3,10 +3,13 @@ kind: PersistentVolumeClaim
 metadata:
   name: kallisti-rss-data
 spec:
-  # Requires a CSI driver supporting ReadWriteOncePod and local filesystem semantics.
-  accessModes: [ReadWriteOncePod]
+  # ReadWriteOnce works with local-path, hostpath and CSI block storage; the
+  # single replica and Recreate strategy keep one writer. On a CSI driver that
+  # supports it, ReadWriteOncePod additionally limits the claim to one pod.
+  accessModes: [ReadWriteOnce]
   volumeMode: Filesystem
-  # storageClassName: your-block-storage-class
+  # Set when the cluster has no default class (for example local-path-retain).
+  # storageClassName: your-local-storage-class
   resources:
     requests:
       storage: 1Gi
