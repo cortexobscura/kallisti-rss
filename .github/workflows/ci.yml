@@ -39,6 +39,10 @@ jobs:
         run: sh scripts/check-deploy.sh
       - name: Build fixture image
         run: docker build -t kallisti-rss:test .
+      - name: Exercise Compose service offline
+        env:
+          KALLISTI_RSS_IMAGE: kallisti-rss:test
+        run: sh scripts/check-compose-runtime.sh
       - name: Verify Alpine runtime and run offline fixture
         run: |
           docker run --rm --network=none --read-only --cap-drop=ALL \
