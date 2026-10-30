@@ -1,4 +1,4 @@
-module github.com/cortexobscura/kallisti-rss
+module github.com/kallisti-chat/kallisti-rss
 
 go 1.27.3
 

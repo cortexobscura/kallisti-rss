@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/cortexobscura/kallisti-rss/internal/bot"
+	"github.com/kallisti-chat/kallisti-rss/internal/bot"
 	"log/slog"
 	"os"
 	"os/signal"

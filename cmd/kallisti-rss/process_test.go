@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/cortexobscura/kallisti-rss/internal/bot"
+	"github.com/kallisti-chat/kallisti-rss/internal/bot"
 	"os"
 	"os/exec"
 	"path/filepath"
