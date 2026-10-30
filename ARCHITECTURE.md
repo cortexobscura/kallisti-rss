@@ -88,7 +88,7 @@ Logs expose controlled diagnostics, IDs, counts and feed host plus a short URL h
 
 ## Packaging and operation
 
-[Makefile](Makefile) builds the primary and compatibility binaries and supplies the local acceptance interface. [Dockerfile](Dockerfile) uses a Go 1.27.3 Alpine 3.24 builder and Alpine 3.24 runtime with CA certificates, UID/GID 65532 and notices under `/usr/share/doc/kallisti-rss/`. Runtime paths remain `/feedbot`, `/data` and `/config/config.yaml`.
+[Makefile](Makefile) builds the primary and compatibility binaries and supplies the local acceptance interface. [Dockerfile](Dockerfile) copies only `go.mod`, `go.sum`, `cmd/` and `internal/` into a Go 1.27.3 Alpine 3.24 builder (so container-owned operator data left in the tree is never walked) and Alpine 3.24 runtime with CA certificates, UID/GID 65532 and notices under `/usr/share/doc/kallisti-rss/`. Runtime paths remain `/feedbot`, `/data` and `/config/config.yaml`.
 
 [compose.yaml](compose.yaml) supplies one `feedbot` service with entrypoint `/feedbot -config /config/config.yaml`, so `docker compose run` arguments append action flags: read-only root, no capabilities, no-new-privileges, 64 PIDs, 512 MiB RAM, one CPU, a 32 MiB `/tmp`, private operator-provided mounts and no published ports. The image has no operational config or credentials. Production mount permissions and runtime connectivity require separate operator verification.
 
