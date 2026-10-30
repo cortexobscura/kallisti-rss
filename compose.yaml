@@ -2,6 +2,9 @@ services:
   feedbot:
     build: .
     image: kallisti-rss:local
+    # Pin the mounted config so `docker compose run feedbot -status` appends an
+    # action instead of replacing the image CMD and its config path.
+    entrypoint: ["/feedbot", "-config", "/config/config.yaml"]
     restart: unless-stopped
     init: true
     user: "65532:65532"
