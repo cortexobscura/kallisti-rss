@@ -1,0 +1,9 @@
+# Optional: restrict egress to cluster DNS and public IPv4 HTTP(S). Enable with
+#   components:
+#     - components/egress-public
+# in ../../kustomization.yaml. Do not enable it if the Kallisti server or a feed
+# is only reachable on a private, tailnet or IPv6 address.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - networkpolicy-egress.yaml
