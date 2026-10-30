@@ -15,7 +15,7 @@ mounted configuration. Pass only the action flags shown below. A plain
 From this directory:
 
 ```sh
-cp config.example.yaml config.yaml
+cp config.example.yaml config.yaml   # this directory's example, not the repository root's
 mkdir -p secrets data backups
 chmod 700 secrets data backups
 # Optional image-name override:
@@ -112,6 +112,22 @@ are exposed. Outbound DNS, HTTPS/WSS to Kallisti, and public feed and image acce
 are required; public HTTP requires the explicit config opt-in. Keep exactly one
 instance per database. Do not run the root Compose setup against the same data
 directory at the same time.
+
+## Troubleshoot first start
+
+- `cannot read configured secret file "./secrets/password" (resolved to
+  "/data/secrets/password")`: the config uses host-relative paths, usually
+  because it was copied from the repository-root example. Inside the container
+  use `password_file: /run/secrets/password` (or `token_file`) and
+  `database: /data/feedbot.db`. The error names the path, never the contents.
+- `Found orphan containers ... for this project`: another Compose project shares
+  this project's name. The file sets `name: kallisti-rss`; an older copy without
+  it used the directory name `docker`. Do not pass `--remove-orphans`, which
+  deletes the other project's containers. If you started an older copy, remove
+  only its bot container with `docker compose -p docker rm -s -f feedbot` before
+  `docker compose up -d`. `COMPOSE_PROJECT_NAME` in `.env` overrides the name.
+- `database already in use`: another bot or offline command holds the database
+  lock. Stop the service before offline commands.
 
 ## Monitor
 
