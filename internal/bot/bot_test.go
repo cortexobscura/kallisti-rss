@@ -354,7 +354,7 @@ func TestIncomingLiveCommandsOnly(t *testing.T) {
 	f := &Fixture{Posts: map[string]Job{}, Events: []Event{{Type: "history", Message: Message{ID: 1, Channel: 1, AuthorID: &admin, Verified: true, Text: "!feed help"}}, {Type: "message-edited", Message: Message{ID: 2, Channel: 1, AuthorID: &admin, Verified: true, Text: "!feed help"}}, {Type: "message", Message: Message{ID: 3, Channel: 1, AuthorID: &self, Verified: true, Text: "!feed help"}}, {Type: "message", Message: Message{ID: 4, Channel: 1, AuthorID: &admin, Verified: true, Text: "!feed help"}}}}
 	srv := httptest.NewServer(http.HandlerFunc(f.Handler))
 	defer srv.Close()
-	c, e := dialConnection(context.Background(), Config{Server: srv.URL, Origin: srv.URL, Username: "fixture", Channels: []int64{1}}, "fixture-only-token", srv.Client())
+	c, e := dialConnection(context.Background(), Config{Server: srv.URL, Origin: srv.URL, Username: "fixture", Channels: []int64{1}, Admins: []uint32{admin}}, "fixture-only-token", srv.Client())
 	must(t, e)
 	defer c.Close()
 	select {

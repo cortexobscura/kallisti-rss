@@ -9,6 +9,7 @@ import (
 	"github.com/coder/websocket"
 	"google.golang.org/protobuf/encoding/protowire"
 	"io"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
@@ -215,11 +216,14 @@ func (c *Connection) read(ctx context.Context) {
 			if v.Message.AuthorID != nil && *v.Message.AuthorID == c.self {
 				continue
 			}
-			if strings.HasPrefix(v.Message.Text, "!feed ") {
+			// Authorize before queueing so other users cannot fill the queue;
+			// Engine.Command checks again. A full queue drops the command
+			// rather than closing the connection, which would lose it anyway.
+			if strings.HasPrefix(v.Message.Text, "!feed ") && c.cfg.Authorized(v.Message.AuthorID, v.Message.Verified, v.Message.Channel) {
 				select {
 				case c.Commands <- v.Message:
 				default:
-					return
+					slog.Warn("command dropped; command queue full", "channel", v.Message.Channel, "message", v.Message.ID)
 				}
 			}
 			continue
