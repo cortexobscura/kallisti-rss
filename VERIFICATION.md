@@ -1,5 +1,29 @@
 # Verification report — 2026-10-26
 
+## Module path and readme cleanup — 2026-10-30
+
+The repository moved from `cortexobscura/kallisti-rss` to
+`kallisti-chat/kallisti-rss`; the old name redirects. `go.mod` and the
+`internal/bot` imports now use `github.com/kallisti-chat/kallisti-rss`, and the
+recorded Actions run 40424382007 link points at the new owner (the GitHub API
+confirms the same run, commit `28f1a0d` and success). Older dated entries below
+keep the old name as historical record. The README gains CI, Go version and
+license badges and drops its name-compatibility and license section; LICENSE
+and THIRD_PARTY.md are unchanged. No runtime behavior, schema, CLI or
+container path changed.
+
+Local Linux results:
+
+- `make check`, `make serve-demo`, `make fuzz`, `make check-deploy`: PASS;
+  coverage 38.7%/83.9%, demo pending=0 blocked=0 delivered=2, 31,274 fuzz
+  executions under host memory pressure.
+- `go list -m` reports the new path; example `-check-config`, compatibility
+  binary `cmp` and both release-input scripts: PASS.
+- `make security`: FAILED locally. The host earlyoom daemon sent SIGTERM to
+  govulncheck even with `GOGC=10 GOMEMLIMIT=450MiB GOMAXPROCS=1` (about 650 MiB
+  free). Not a scanner finding; hosted CI is the security result for this change.
+
+UNRUN: hosted CI until the pull request runs; live interoperability.
 ## Compose shore-up verification — 2026-10-30
 
 Both Compose files now set `entrypoint: ["/feedbot", "-config",
@@ -234,7 +258,7 @@ These checks use synthetic content without live config, credentials, database mo
 
 ## Hosted GitHub verification
 
-[Actions run 40424382007](https://github.com/cortexobscura/kallisti-rss/actions/runs/40424382007) completed successfully on 2026-10-27 at 00:11:15 UTC for commit `28f1a0d96a770a56a9d3cd1a9cdd1613a1afd45d`. The run's job/step results were inspected during reverse blueprinting; all acceptance steps reported success.
+[Actions run 40424382007](https://github.com/kallisti-chat/kallisti-rss/actions/runs/40424382007) completed successfully on 2026-10-27 at 00:11:15 UTC for commit `28f1a0d96a770a56a9d3cd1a9cdd1613a1afd45d`. The run's job/step results were inspected during reverse blueprinting; all acceptance steps reported success.
 
 Passed: synthetic release-input failure regression and Docker context checks; `make release-check`; example configuration and compatibility-binary comparison; Compose validation; Alpine image build; runtime UID/GID, CA and notice assertions; hardened network-disabled demo. The workflow did not publish an image or deploy.
 
