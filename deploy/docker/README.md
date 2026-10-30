@@ -124,6 +124,8 @@ proof of successful authentication or delivery. Watch the logs:
 | `feed poll failed` | One feed failed with a controlled `error_class`; others continue |
 | `delivery acknowledged` | A post was acknowledged by the server and committed |
 | `delivery quarantined` | A job is blocked for operator reconciliation |
+| `feed entries deferred` | A feed hit the per-poll (25) or per-channel (1,000) limit; the rest queue on later polls |
+| `command dropped; command queue full` | Allowlisted commands arrived faster than the bot processed them; resend |
 | `connection unavailable; retrying in 30s` repeating | Login, token, TLS, network or channel visibility problem |
 | `feedbot stopped` then a restart | Fatal config, database or identity error; `restart: unless-stopped` retries |
 
