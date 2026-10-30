@@ -33,7 +33,8 @@ Delivery isolation extension: upstream `hub.go` Handle sets answering to the sen
 Reviewed the canonical repository's history from the pinned `d8fd12d` to tag
 `v0.11.0` (`1c201c1`, 238 commits), plus the 57 commits from tag `v0.10.0`
 (`7428e2d`) to the pin, for the files in the contract table above. The pin
-stays at `d8fd12d`; nothing below has been run against a live v0.11.0 server.
+stays at `d8fd12d`. The owner's live checks ran against a v0.11.0 server (see
+below); the review itself is from source.
 
 Unchanged from the pin through v0.11.0:
 
@@ -68,8 +69,8 @@ Tag `v0.10.0` predates the pin and lacks multi-file sends: `send` takes a single
 `upload` key and `ready` has no `maxUploads`, so the bot attaches no images
 there (text only), and sidecar frames are limited to 16 KiB. The bot's largest
 `send` frame (2,000 runes, each at most 6 bytes when JSON-encoded, plus fixed
-upload descriptions) fits within that limit. The owner's server reports
-version 0.10.0 but delivered image attachments in the live checks, so it runs a
-build after the multi-file commits; upstream kept the 0.10.0 version string
-until `v0.11.0`. The server exposes no build commit, so its exact revision
-comes from the deployment, not from the bot.
+upload descriptions) fits within that limit. The owner's test server runs Kallisti `v0.11.0` (`1c201c1`), per the owner.
+Earlier on the same day it was reported as 0.10.0, but it delivered image
+attachments, which tag `v0.10.0` cannot; upstream kept the 0.10.0 version
+string until `v0.11.0`. The server exposes no build commit, so which checks ran
+on which build was not recorded.
