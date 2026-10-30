@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -180,6 +181,65 @@ func TestPauseResumeReportsCurrentState(t *testing.T) {
 		must(t, err)
 		if got := jobs[len(jobs)-1].Payload.Text; got != c.want {
 			t.Fatalf("step %d %q: reply %q, want %q", i, c.text, got, c.want)
+		}
+	}
+}
+
+// Add must say whether it created, restored or found the subscription, and
+// must not silently resume a paused one.
+func TestAddReportsWhatHappened(t *testing.T) {
+	s := testStore(t)
+	admin := uint32(42)
+	ctx := context.Background()
+	e := Engine{Config: Config{Channels: []int64{1, 2}, Admins: []uint32{admin}}, Store: s}
+	url := "https://example.com/feed"
+	for i, c := range []struct {
+		channel    int64
+		text, want string
+	}{
+		{1, "!feed add " + url, "Subscription 1 added. Its first poll records current entries without posting them."},
+		{1, "!feed add " + url, "Subscription 1 already exists; nothing changed."},
+		{1, "!feed pause 1", "Subscription 1 paused. Already queued posts remain in the outbox."},
+		{1, "!feed add " + url, "Subscription 1 already exists and is paused; nothing changed. Use !feed resume 1 to resume it."},
+		{1, "!feed remove 1", "Subscription 1 removed. Already queued posts remain in the outbox."},
+		{1, "!feed add 1", "!feed add takes a feed URL, not an ID. To restore a removed subscription, add its URL again."},
+		{1, "!feed add https://127.0.0.1/feed", "Feed URL rejected."},
+		{1, "!feed add " + url, "Subscription 1 restored with its seen history. Entries it has not seen that are still in the feed may post."},
+		{2, "!feed add " + url, "Subscription 2 added. Its first poll records current entries without posting them."},
+	} {
+		must(t, e.Command(ctx, Message{ID: int64(i + 1), Channel: c.channel, AuthorID: &admin, Verified: true, Text: c.text}))
+		jobs, err := s.Inspect()
+		must(t, err)
+		if got := jobs[len(jobs)-1].Payload.Text; got != c.want {
+			t.Fatalf("step %d %q: reply %q, want %q", i, c.text, got, c.want)
+		}
+	}
+	subs, err := s.Subscriptions()
+	must(t, err)
+	if len(subs) != 2 || subs[0].Paused || subs[1].Paused {
+		t.Fatalf("unexpected subscriptions: %+v", subs)
+	}
+}
+
+// Re-adding an active subscription at the limit is not a limit error.
+func TestAddExistingAtLimitReportsExisting(t *testing.T) {
+	s := testStore(t)
+	admin := uint32(42)
+	e := Engine{Config: Config{Channels: []int64{1}, Admins: []uint32{admin}}, Store: s}
+	var seeds []Seed
+	for i := 0; i < 100; i++ {
+		seeds = append(seeds, Seed{Channel: 1, URL: fmt.Sprintf("https://example.com/%d", i)})
+	}
+	must(t, s.Seed(seeds))
+	for i, c := range []struct{ text, want string }{
+		{"!feed add https://example.com/0", "Subscription 1 already exists; nothing changed."},
+		{"!feed add https://example.com/new", "Subscription limit reached."},
+	} {
+		must(t, e.Command(context.Background(), Message{ID: int64(i + 1), Channel: 1, AuthorID: &admin, Verified: true, Text: c.text}))
+		jobs, err := s.Inspect()
+		must(t, err)
+		if got := jobs[len(jobs)-1].Payload.Text; got != c.want {
+			t.Fatalf("%q: reply %q, want %q", c.text, got, c.want)
 		}
 	}
 }

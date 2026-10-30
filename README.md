@@ -4,7 +4,7 @@
 [![go version](https://img.shields.io/github/go-mod/go-version/kallisti-chat/kallisti-rss)](go.mod)
 [![license: unlicense](https://img.shields.io/badge/license-unlicense-blue)](LICENSE)
 
-Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; partial owner-run live checks of `v0.1.0-rc.1` and `v0.1.0-rc.2` passed on 2026-10-30 (see [VERIFICATION.md](VERIFICATION.md)), and the full acceptance procedure below remains a release gate. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
+Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; partial owner-run live checks of `v0.1.0-rc.1` through `v0.1.0-rc.3` against a Kallisti v0.10.0 server passed on 2026-10-30 (see [VERIFICATION.md](VERIFICATION.md)), and the full acceptance procedure below remains a release gate. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
 
 ## Start with the offline demo
 
@@ -64,7 +64,7 @@ In a configured channel, from an explicitly allowlisted verified registered ID:
 
 All commands are scoped to their channel, deduplicated by server message ID, and ignored from the bot itself, guests, unverified accounts, history responses and edits. There is no display-name authorization. Registered ID 0 is supported **only if explicitly listed**. Messages from anyone else are discarded before queueing; if allowlisted commands arrive faster than the bot can process them, the excess is dropped with a `command dropped; command queue full` warning. Commands are live events: if the connection is down, commands posted during that outage are not replayed from history. Send them again after reconnection. `list` is bounded to 2000 characters and may truncate large lists.
 
-Pause/remove stops future polling for that subscription; already queued messages stay queued and can be reconciled offline. Pausing a paused subscription or resuming an active one changes nothing; the reply says it was already in that state. Resume retains seen IDs, so entries published while paused may be delivered if still present in the next feed response. Re-adding a removed URL restores its existing seen history. Never reuse a database with a different server, account name or registered bot ID; startup rejects that mismatch.
+Pause/remove stops future polling for that subscription; already queued messages stay queued and can be reconciled offline. Pausing a paused subscription or resuming an active one changes nothing; the reply says it was already in that state. Resume retains seen IDs, so entries published while paused may be delivered if still present in the next feed response. Re-adding a removed URL restores it under the same ID with its existing seen history. `add` takes the feed URL, not an ID. Adding a URL that is already subscribed in the channel changes nothing, even if it is paused; use `resume` for that. Never reuse a database with a different server, account name or registered bot ID; startup rejects that mismatch.
 
 ## YAML baseline and SQLite state
 

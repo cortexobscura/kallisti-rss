@@ -1,5 +1,50 @@
 # Verification report — 2026-10-26
 
+## Live check of v0.1.0-rc.3 and add replies — 2026-10-30
+
+### Owner-run live check of rc.3
+
+The bot was switched from rc.2 to `v0.1.0-rc.3` (signed tag on `78b9f07`, image
+built locally from `git archive` of the tag) on the same server, account,
+channel and database. Before the switch, offline `-status` showed
+`pending=0 blocked=0 delivered=21`; the stopped data directory was backed up.
+
+The owner reports the server runs Kallisti v0.10.0. Upstream sets that version
+string at `7428e2d` and keeps it through the pinned `d8fd12d` and at least 228
+later commits, so it does not identify the exact server revision.
+
+Observed, from the container logs (controlled fields only) and owner chat
+transcripts:
+
+- Restart onto the new version: the first cycle completed with
+  `succeeded=2 failed=0`, both subscriptions `queued=0`.
+- Repeated `!feed pause` and `!feed resume` replied that the subscription was
+  already in that state.
+- `!feed remove 1` replied `Subscription 1 removed. ...`, `!feed list` no
+  longer showed it, and a second `!feed remove 1` replied
+  `No matching subscription in this channel.`
+- `!feed add` with the same URL restored it under ID 1. The next poll recorded
+  no new baseline (`baseline_recorded=false`) and queued nothing from the 20
+  feed entries, so seen history survived and nothing old was re-posted.
+
+Still not exercised: disconnect during a send with nonce reconciliation and
+blocked-job recovery.
+
+### Add replies, fixed after rc.3
+
+During the remove test, `!feed add 1` replied only `Feed URL rejected.`, and a
+successful add replied with the same generic text whether it created a
+subscription, restored a removed one or found it already active. Add of a paused
+subscription also silently resumed it. Add now:
+
+- explains that it takes a feed URL, not an ID, when given a number;
+- replies `Subscription N added. ...` or `Subscription N restored ...` with
+  the ID;
+- leaves an existing active subscription unchanged, paused or not, and says so,
+  pointing to `!feed resume N` when it is paused;
+- checks for an existing subscription before the 100-subscription limit, so
+  re-adding one at the limit is not a limit error.
+
 ## Live check of v0.1.0-rc.2 and pause/resume replies — 2026-10-30
 
 ### Owner-run live check of rc.2
