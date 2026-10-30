@@ -90,7 +90,7 @@ Logs expose controlled diagnostics, IDs, counts and feed host plus a short URL h
 
 [Makefile](Makefile) builds the primary and compatibility binaries and supplies the local acceptance interface. [Dockerfile](Dockerfile) uses a Go 1.27.3 Alpine 3.24 builder and Alpine 3.24 runtime with CA certificates, UID/GID 65532 and notices under `/usr/share/doc/kallisti-rss/`. Runtime paths remain `/feedbot`, `/data` and `/config/config.yaml`.
 
-[compose.yaml](compose.yaml) supplies one `feedbot` service: read-only root, no capabilities, no-new-privileges, 64 PIDs, 512 MiB RAM, one CPU, a 32 MiB `/tmp`, private operator-provided mounts and no published ports. The image has no operational config or credentials. Production mount permissions and runtime connectivity require separate operator verification.
+[compose.yaml](compose.yaml) supplies one `feedbot` service with entrypoint `/feedbot -config /config/config.yaml`, so `docker compose run` arguments append action flags: read-only root, no capabilities, no-new-privileges, 64 PIDs, 512 MiB RAM, one CPU, a 32 MiB `/tmp`, private operator-provided mounts and no published ports. The image has no operational config or credentials. Production mount permissions and runtime connectivity require separate operator verification.
 
 The source-only [.dockerignore](.dockerignore) is tested with synthetic decoy secrets and Docker's actual context export. The [GitHub workflow](.github/workflows/ci.yml) runs the same release checks, packaging regressions, config/binary checks, Compose validation and hardened offline container demo. It has read-only repository permissions, pinned actions and no publish/deploy step. Images use version tags rather than digest pins; reproducible image bytes are not promised.
 
@@ -101,4 +101,5 @@ remains compatible with existing installs. Kubernetes uses a single-replica
 Recreate Deployment, a ReadWriteOncePod PVC, generated configuration and an
 operator-managed Secret. No runtime listener or health probe is added.
 `make check-deploy` validates example configs, Compose and Kubernetes schemas;
+`make check-compose` runs the Docker layout offline against a prebuilt image;
 cluster storage, permissions and interoperability still need operator testing.
