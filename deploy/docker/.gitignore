@@ -3,3 +3,4 @@
 /data/
 /backups/
 !/.env.example
+/compose.override.yaml
