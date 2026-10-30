@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/cortexobscura/kallisti-rss/internal/bot"
+	"github.com/kallisti-chat/kallisti-rss/internal/bot"
 	"os"
 	"path/filepath"
 	"reflect"

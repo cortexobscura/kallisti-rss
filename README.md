@@ -1,5 +1,9 @@
 # kallisti-rss
 
+[![ci](https://github.com/kallisti-chat/kallisti-rss/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kallisti-chat/kallisti-rss/actions/workflows/ci.yml)
+[![go version](https://img.shields.io/github/go-mod/go-version/kallisti-chat/kallisti-rss)](go.mod)
+[![license: unlicense](https://img.shields.io/badge/license-unlicense-blue)](LICENSE)
+
 Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; a recorded upstream runtime acceptance run remains a release gate. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
 
 ## Start with the offline demo
@@ -224,9 +228,3 @@ Safe image evidence in logs:
 - Failed delivery logs include `attachments_in_payload`, never an acknowledgment claim. Permission rejection or lost acknowledgment preserves the existing immutable payload/nonce and normal retry policy; no replacement text-only send is created after uncertainty.
 
 Logs omit raw feed/HTML/media content, full URLs/query tokens and upload keys. The new tests use synthetic fresh RSS entries after a baseline, including enclosure and content:encoded images, through a local TLS upload/WebSocket fixture. The owner reports successful live images from Reddit, Pleroma, Mastodon and GoToSocial. Read-only inspection confirmed the Cofe test RSS item omitted its attachment (tracked by the owner as Cofe issue 33); the image itself passed download/raster checks. No live image delivery was attempted by this build task.
-
-## Name compatibility and license
-
-The public project is `kallisti-rss`, module `github.com/cortexobscura/kallisti-rss`. `make build` also writes the identical compatibility executable `bin/kallisti-feedbot`, so existing service commands continue to work. CLI flags, YAML schema, default database path, secret paths and SQLite identities are unchanged; do not reset or rename your live database. The container still uses `/feedbot` internally and Compose retains service `feedbot`; only the local image tag changes to `kallisti-rss:local`. Older `go run ./cmd/kallisti-feedbot` development commands become `go run ./cmd/kallisti-rss`.
-
-First-party code uses The Unlicense, confirmed by the owner to match upstream's preference. Third-party notices remain in `licenses/`.
