@@ -23,7 +23,53 @@ Old servers without nonce echoes are unsupported: response timeout closes the co
 
 The implementation uses protobuf wire helpers for just the minimal handshake fields and ignores unrelated binary events after ready.
 
-Offline protocol fixtures test our adapter against this documented wire shape. They are not an execution of the upstream server. A partial live check against an owner-run server passed on 2026-10-30 (see VERIFICATION.md); its revision was not recorded, so testing against the pinned revision remains unrun. Keep the upstream references when reviewing protocol changes.
+Offline protocol fixtures test our adapter against this documented wire shape. They are not an execution of the upstream server. A partial live check against an owner-run server passed on 2026-10-30 (see VERIFICATION.md); see the upstream review below for what the reported version does and does not identify; testing against the pinned revision itself remains unrun. Keep the upstream references when reviewing protocol changes.
 
 
 Delivery isolation extension: upstream `hub.go` Handle sets answering to the send nonce, and `send` adds it to error events (including slow-mode/rate replies). The adapter correlates exact nonce before classifying scope. Exact `unknown channel`, `you may not use this channel's chat`, and `unknown upload` identify a destination/job-local rejection. Slow-mode classification additionally requires `about=slow-mode`, matching channel and an exact bounded seconds message (server slowmode.go). Account/server rate limiting, server storage errors, message-policy errors and unknown text remain global. Untrusted error messages are inspected only within 1024 encoded bytes and converted to fixed classes; neither raw text nor echoed composer content is logged/persisted. Mismatched nonce is ignored and cannot grant local isolation; timeout then closes the connection conservatively.
+
+## Upstream review through Kallisti v0.11.0 — 2026-10-30
+
+Reviewed the canonical repository's history from the pinned `d8fd12d` to tag
+`v0.11.0` (`1c201c1`, 238 commits), plus the 57 commits from tag `v0.10.0`
+(`7428e2d`) to the pin, for the files in the contract table above. The pin
+stays at `d8fd12d`; nothing below has been run against a live v0.11.0 server.
+
+Unchanged from the pin through v0.11.0:
+
+- `send` with channel, text, nonce and `uploads` `{key,description}`; the
+  sender's `message` copy carries the nonce; errors carry it via `answering`.
+- 64 KiB sidecar frames, at most 10 uploads, `ready.uploadMax` and
+  `ready.maxUploads`, 24-hour `NonceTTL`, and `MessageByNonce` dedup.
+- `/api/upload` with `X-Upload-Token` and `X-Filename`; account upload tokens
+  are still redeemed there. New logo tokens are refused by that endpoint.
+- The Mumble protobuf definitions and the Version, Authenticate, ServerSync and
+  UserState handshake.
+
+Changed, and how it affects the bot:
+
+- **Ended sessions are refused.** A WebSocket bearer token that names no
+  session (expired, logged out, revoked by a password change) is now closed
+  with `session expired` (policy violation) instead of falling through to the
+  guest path. The bot still treats this as a failed connection. Password mode
+  logs in again after 29 days, ahead of the server's 30-day session lifetime,
+  but a revoked session still needs a restart, as documented.
+- **Login from other sites is guarded.** `/api/login` from an Origin that is not
+  the server's own site gets a per-name attempt limit, and a name with no web
+  account gets `403`. The bot sends the configured `origin`; set it to the
+  server's own site.
+- **Guests only on the server's own site.** It does not affect the bot, which
+  connects with an account token.
+- Unrelated additions (server logo, home servers, OAuth, private categories,
+  microphone info, connection lists) add request types and `ready` fields
+  that the bot ignores.
+
+Tag `v0.10.0` predates the pin and lacks multi-file sends: `send` takes a single
+`upload` key and `ready` has no `maxUploads`, so the bot attaches no images
+there (text only), and sidecar frames are limited to 16 KiB. The bot's largest
+`send` frame (2,000 runes, each at most 6 bytes when JSON-encoded, plus fixed
+upload descriptions) fits within that limit. The owner's server reports
+version 0.10.0 but delivered image attachments in the live checks, so it runs a
+build after the multi-file commits; upstream kept the 0.10.0 version string
+until `v0.11.0`. The server exposes no build commit, so its exact revision
+comes from the deployment, not from the bot.
