@@ -1,5 +1,45 @@
 # Verification report — 2026-10-26
 
+## Command flood and feed backlog remediation — 2026-10-30
+
+Two availability gaps found in review were reproduced with new tests before
+the fix, all four failing against the previous code:
+
+- Any chat user could post more than 256 `!feed ` lines while the main loop
+  was busy polling or draining. The reader queued them before authorization
+  and closed the connection when the queue filled, forcing a 30-second
+  reconnect and turning any in-flight send uncertain. The pinned upstream
+  `hub.go` (d8fd12d) only adds a nonce to the sender's own acknowledgment and
+  to errors answering that connection's request, so other users cannot reach
+  the 32-event RPC queue; only the command queue was exposed.
+- One subscription could queue up to 1,000 posts per poll. A feed that
+  rewrites entry IDs filled the global 10,000-job outbox in about ten polls,
+  after which ingestion for every channel rolled back.
+
+The reader now applies `Config.Authorized` before queueing and drops overflow
+with a `command dropped; command queue full` warning. Ingestion queues at most
+25 new posts per subscription per poll and none while the channel holds 1,000
+unresolved jobs; excess entries stay unseen, are reconsidered oldest-first on
+later polls and are reported with a `feed entries deferred` warning. The
+10,000 global cap and its rollback remain. No schema change.
+
+Local Linux results:
+
+- New tests in `internal/bot/flood_test.go`: PASS, including 20 repeated race
+  runs together with the two adjusted existing tests.
+- `TestIncomingLiveCommandsOnly` now configures its admin ID (it previously
+  relied on unauthorized queueing). `TestCapacityRollback` fills the global cap
+  from another channel so it still exercises the global rollback path rather
+  than the new per-channel deferral.
+- `make check`, `make serve-demo`, `make fuzz`: PASS; coverage 38.7%/84.1%,
+  demo pending=0 blocked=0 delivered=2, fuzz 3,007 executions under host
+  memory pressure.
+- `make security` with `GOGC=20 GOMEMLIMIT=700MiB GOMAXPROCS=2`: PASS; no
+  called vulnerabilities, gosec zero issues with five existing suppressions.
+
+UNRUN: hosted CI until the pull request runs; live upstream behavior under a
+real command flood or a misbehaving feed.
+
 ## Module path and readme cleanup — 2026-10-30
 
 The repository moved from `cortexobscura/kallisti-rss` to

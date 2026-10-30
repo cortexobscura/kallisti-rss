@@ -354,7 +354,7 @@ func TestIncomingLiveCommandsOnly(t *testing.T) {
 	f := &Fixture{Posts: map[string]Job{}, Events: []Event{{Type: "history", Message: Message{ID: 1, Channel: 1, AuthorID: &admin, Verified: true, Text: "!feed help"}}, {Type: "message-edited", Message: Message{ID: 2, Channel: 1, AuthorID: &admin, Verified: true, Text: "!feed help"}}, {Type: "message", Message: Message{ID: 3, Channel: 1, AuthorID: &self, Verified: true, Text: "!feed help"}}, {Type: "message", Message: Message{ID: 4, Channel: 1, AuthorID: &admin, Verified: true, Text: "!feed help"}}}}
 	srv := httptest.NewServer(http.HandlerFunc(f.Handler))
 	defer srv.Close()
-	c, e := dialConnection(context.Background(), Config{Server: srv.URL, Origin: srv.URL, Username: "fixture", Channels: []int64{1}}, "fixture-only-token", srv.Client())
+	c, e := dialConnection(context.Background(), Config{Server: srv.URL, Origin: srv.URL, Username: "fixture", Channels: []int64{1}, Admins: []uint32{admin}}, "fixture-only-token", srv.Client())
 	must(t, e)
 	defer c.Close()
 	select {
@@ -464,7 +464,7 @@ func TestCapacityRollback(t *testing.T) {
 	must(t, s.Seed([]Seed{{Channel: 1, URL: "https://example.com"}}))
 	subs, _ := s.Subscriptions()
 	must(t, s.Ingest(context.Background(), subs[0], nil))
-	_, e := s.DB.Exec(`WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<10000) INSERT INTO outbox(channel,nonce,payload) SELECT 1,'n'||x,'{}' FROM n`)
+	_, e := s.DB.Exec(`WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<10000) INSERT INTO outbox(channel,nonce,payload) SELECT 2,'n'||x,'{}' FROM n`) // other channels fill the global cap
 	must(t, e)
 	if s.Ingest(context.Background(), subs[0], []Entry{{ID: "fresh", Title: "fresh"}}) == nil {
 		t.Fatal("capacity ignored")

@@ -95,17 +95,22 @@ func (e *Engine) poll(ctx context.Context, scheduled bool) error {
 		}
 		fields := append([]any{"subscription", s.ID, "channel", s.Channel, "yaml_feed", seedIndex(e.Config, s.Channel, s.URL)}, feedFields(s.URL)...)
 		x := fetchErr
+		var ingested IngestResult
 		if x == nil {
-			if er := e.Store.Ingest(ctx, s, entries); er != nil {
+			var er error
+			if ingested, er = e.Store.IngestCounts(ctx, s, entries); er != nil {
 				x = diag("storage_error", "ingest transaction failed; seen/outbox update not committed")
 			}
+		}
+		if x == nil && ingested.Deferred > 0 {
+			slog.Warn("feed entries deferred", append(fields, "queued", ingested.Queued, "deferred", ingested.Deferred, "max_new_per_poll", MaxNewPerPoll, "channel_pending_limit", ChannelPendingLimit, "retry", "next_channel_poll")...)
 		}
 		if x != nil {
 			slog.Warn("feed poll failed", append(append(fields, errorFields(x)...), "baseline_pending", !s.Initialized, "retry", "next_channel_poll", "poll_interval", e.Config.ChannelPollInterval(s.Channel))...)
 			errs = append(errs, fmt.Errorf("subscription %d failed: %w", s.ID, x))
 		} else {
 			passed++
-			slog.Info("feed poll completed", append(fields, "entries", len(entries), "baseline_recorded", !s.Initialized, "image_entries", imageEntries, "image_candidates", candidates, "stage", "extraction", "poll_interval", e.Config.ChannelPollInterval(s.Channel))...)
+			slog.Info("feed poll completed", append(fields, "entries", len(entries), "queued", ingested.Queued, "baseline_recorded", !s.Initialized, "image_entries", imageEntries, "image_candidates", candidates, "stage", "extraction", "poll_interval", e.Config.ChannelPollInterval(s.Channel))...)
 		}
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -234,7 +239,7 @@ func (e *Engine) Command(ctx context.Context, m Message) error {
 	if err = tx.QueryRow("SELECT count(*) FROM outbox WHERE state IN ('pending','blocked')").Scan(&pending); err != nil {
 		return err
 	}
-	if pending >= 10000 {
+	if pending >= OutboxPendingLimit {
 		return errors.New("outbox capacity reached")
 	}
 	reply := "Usage: !feed list | add HTTPS_URL | remove ID | pause ID | resume ID | help"
