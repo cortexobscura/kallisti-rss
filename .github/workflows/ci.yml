@@ -38,7 +38,15 @@ jobs:
       - name: Validate deployment templates
         run: sh scripts/check-deploy.sh
       - name: Build fixture image
-        run: docker build -t kallisti-rss:test .
+        run: |
+          # Simulate container-owned operator data left by an in-tree deployment;
+          # neither the image build nor Go package checks may walk into it.
+          mkdir -p data deploy/docker/data
+          chmod 000 data deploy/docker/data
+          docker build -t kallisti-rss:test .
+          make vet
+          chmod 700 data deploy/docker/data
+          rmdir data deploy/docker/data
       - name: Exercise Compose service offline
         env:
           KALLISTI_RSS_IMAGE: kallisti-rss:test

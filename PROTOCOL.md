@@ -23,7 +23,7 @@ Old servers without nonce echoes are unsupported: response timeout closes the co
 
 The implementation uses protobuf wire helpers for just the minimal handshake fields and ignores unrelated binary events after ready.
 
-Offline protocol fixtures test our adapter against this documented wire shape. They are not an execution of the upstream server. Actual pinned-server runtime testing remains unrun. Keep the upstream references when reviewing protocol changes.
+Offline protocol fixtures test our adapter against this documented wire shape. They are not an execution of the upstream server. A partial live check against an owner-run server passed on 2026-10-30 (see VERIFICATION.md); its revision was not recorded, so testing against the pinned revision remains unrun. Keep the upstream references when reviewing protocol changes.
 
 
 Delivery isolation extension: upstream `hub.go` Handle sets answering to the send nonce, and `send` adds it to error events (including slow-mode/rate replies). The adapter correlates exact nonce before classifying scope. Exact `unknown channel`, `you may not use this channel's chat`, and `unknown upload` identify a destination/job-local rejection. Slow-mode classification additionally requires `about=slow-mode`, matching channel and an exact bounded seconds message (server slowmode.go). Account/server rate limiting, server storage errors, message-policy errors and unknown text remain global. Untrusted error messages are inspected only within 1024 encoded bytes and converted to fixed classes; neither raw text nor echoed composer content is logged/persisted. Mismatched nonce is ignored and cannot grant local isolation; timeout then closes the connection conservatively.

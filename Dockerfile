@@ -2,7 +2,10 @@ FROM golang:1.27.3-alpine3.24 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
+# Copy only build inputs: BuildKit then walks just these paths, so container-owned
+# operator data left in the tree (data/, deploy/docker/data/) cannot break builds.
+COPY cmd/ cmd/
+COPY internal/ internal/
 RUN cp /usr/local/go/LICENSE /GO-LICENSE
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /feedbot ./cmd/kallisti-rss
 FROM alpine:3.24
