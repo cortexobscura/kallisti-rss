@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -27,20 +29,30 @@ func NewDialer(c Config) *Dialer { return &Dialer{cfg: c, client: serverClient()
 func serverClient() *http.Client {
 	return &http.Client{Timeout: 25 * time.Second, Transport: &http.Transport{Proxy: nil, ResponseHeaderTimeout: 10 * time.Second, TLSHandshakeTimeout: 10 * time.Second, MaxResponseHeaderBytes: 32768}, CheckRedirect: func(*http.Request, []*http.Request) error { return errors.New("server redirects refused") }}
 }
+
+// secretPath names a configured secret file for errors: the operator path and,
+// when relative, where it resolved (container working directories differ from
+// the host). It never includes file contents.
+func secretPath(path string) string {
+	if abs, e := filepath.Abs(path); e == nil && abs != path {
+		return fmt.Sprintf("%q (resolved to %q)", path, abs)
+	}
+	return fmt.Sprintf("%q", path)
+}
 func readSecret(path string) (string, error) {
 	// #nosec G304 -- secret path comes only from explicit local operator configuration.
 	f, e := os.Open(path)
 	if e != nil {
-		return "", errors.New("cannot read configured secret file")
+		return "", fmt.Errorf("cannot read configured secret file %s", secretPath(path))
 	}
 	defer f.Close()
 	b, e := io.ReadAll(io.LimitReader(f, 4097))
 	if e != nil || len(b) > 4096 {
-		return "", errors.New("invalid secret file size")
+		return "", fmt.Errorf("invalid secret file size in %s", secretPath(path))
 	}
 	s := strings.TrimSuffix(strings.TrimSuffix(string(b), "\n"), "\r")
 	if s == "" || strings.ContainsAny(s, "\r\n") {
-		return "", errors.New("secret must be one nonempty line")
+		return "", fmt.Errorf("secret file %s must contain one nonempty line", secretPath(path))
 	}
 	return s, nil
 }
