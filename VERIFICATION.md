@@ -1,5 +1,60 @@
 # Verification report — 2026-10-26
 
+## Live check of v0.1.0-rc.4: lost acknowledgment and blocked recovery — 2026-10-30
+
+The bot was switched from rc.3 to `v0.1.0-rc.4` (signed tag on `c3f1ad7`, image
+built locally from `git archive` of the tag) on the same server, account,
+channel and database. Before the switch, offline `-status` showed
+`pending=0 blocked=0 delivered=32`; the stopped data directory was backed up.
+The first cycle completed with `succeeded=2 failed=0`, both subscriptions
+`queued=0`.
+
+### Lost acknowledgment during a send
+
+To lose an acknowledgment after the server accepted a post, the owner delayed
+all traffic into the bot container by 30 seconds with
+`tc qdisc add dev <host veth> root netem delay 30s`, longer than the 20-second
+acknowledgment timeout. Outgoing traffic was not delayed. The owner then sent
+`!feed list`. Observed in the container logs:
+
+- 18:47:19 UTC: job 34 (the reply) logged `delivery failed; retry scheduled`
+  with `error_class=ack_timeout`, `failed_attempts=1`, `retry_state=durable`.
+  The job stayed pending with its payload and nonce.
+- 18:47:59: one reconnect attempt failed while the delay was still active.
+- The owner removed the delay. 18:48:30: the bot reconnected, resent job 34
+  with the same nonce and logged `delivery acknowledged job=34`.
+- The owner reported a normal delivery with no duplicate reply in the
+  channel: the server matched the retried nonce to the message it had
+  already posted.
+
+Side effect: the delay also slowed DNS replies, so the 18:46 poll failed both
+feeds with `dns_error`; they retry on the next poll. The container did not
+restart.
+
+### Blocked-job recovery drill
+
+A job becomes blocked only after an uncertain send ages past the 23-hour
+retry horizon or the clock moves backwards. Neither was practical to produce on
+the live bot, and editing the live database is against the operating rules. The
+owner instead ran the operator recovery offline on a scratch copy of the rc.3
+backup, using the rc.4 image with `--network=none` and the production config:
+
+- `sqlite3` set job 32 to `state='blocked'` in the copy.
+- `-status`: `pending=0 blocked=1 delivered=31`.
+- `-resolve-job 32 -resolution delivered`: no output.
+- `-status`: `pending=0 blocked=0 delivered=32`.
+
+The `-outbox` step printed nothing because the suggested `grep` used
+`"state"`; the field is serialized as `"State"`. The transition into `blocked`
+is covered by unit tests, not by this drill. The scratch copy was deleted.
+
+### Acceptance status
+
+Every step of the README live acceptance procedure has now been run at least
+once on rc.1 through rc.4, except a plain-container run outside Compose. The
+exact server revision is still unknown (Kallisti v0.10.0). The rc.4 `!feed add`
+replies have not been reported from live use yet.
+
 ## Live check of v0.1.0-rc.3 and add replies — 2026-10-30
 
 ### Owner-run live check of rc.3
