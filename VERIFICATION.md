@@ -1,5 +1,38 @@
 # Verification report — 2026-10-26
 
+## Live check of v0.1.0-rc.2 and pause/resume replies — 2026-10-30
+
+### Owner-run live check of rc.2
+
+The bot was switched from rc.1 to `v0.1.0-rc.2` (signed tag on `c768f4c`, image
+built locally from `git archive` of that commit) on the same server, account,
+channel and database. Before the switch, offline `-status` showed
+`pending=0 blocked=0 delivered=12`. The stopped data directory was backed up,
+and the service restarted with `docker compose up -d --no-build`.
+
+Observed, from the container logs (controlled fields only) and owner reports:
+
+- Restart onto the new version: the first cycle completed with
+  `succeeded=2 failed=0`, and both subscriptions reported `queued=0`. Nothing
+  was re-posted.
+- A newly added subscription recorded its baseline without posting old entries.
+- An Atom feed polled and delivered.
+- Chat `!feed pause` and `!feed resume` changed the subscription state.
+
+Still not exercised: chat `remove`, disconnect during a send with nonce
+reconciliation, blocked-job recovery, and recording the server revision.
+
+### Repeated pause/resume replies, fixed after rc.2
+
+The owner noted that pausing a paused subscription, or resuming an active one,
+replied `Subscription updated.` although nothing changed. The update matched
+any active row regardless of its current state. The command now reads the
+subscription's state inside the same transaction and replies
+`Subscription N is already paused; nothing changed.` or
+`Subscription N is already active; nothing changed.` without writing. Real
+changes now name the action (`paused`, `resumed`, `removed`). Channel scoping,
+command deduplication and rollback are unchanged.
+
 ## Live check of v0.1.0-rc.1 and rc.2 fixes — 2026-10-30
 
 ### Partial owner-run live check
