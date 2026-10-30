@@ -64,7 +64,7 @@ These entries are not an authorization to fix runtime behavior during a document
 
 ## Remaining verification obligations
 
-- EXTERNAL: execute the dedicated-channel upstream workflow against a recorded Kallisti revision with owner authorization. Source citations and synthetic wire fixtures cannot prove live interoperability or the server's actual nonce/deletion behavior.
+- EXTERNAL: execute the dedicated-channel upstream workflow against a recorded Kallisti revision with owner authorization. Source citations and synthetic wire fixtures cannot prove live interoperability or the server's actual nonce/deletion behavior. A partial owner-run check of `v0.1.0-rc.1` passed on 2026-10-30 (login, discovery, polling, image and text delivery, acknowledgments, `!feed list` and a denied user); restart deduplication, disconnect/nonce reconciliation, blocked recovery, Atom delivery, add/pause/resume/remove and the server revision remain unrecorded.
 - EXTERNAL: verify production data/config/secret mount permissions and real TLS/Origin policy. The network-disabled container demo uses no operational mounts.
 - OBSERVED gap: no deterministic injected DNS-answer/rebinding suite covers every resolver outcome; direct private dialing, IP policy and redirects are covered. Do not replace implementation review with a stronger test claim.
 - OBSERVED gap: the real-process signal test uses a missing secret and no network; authenticated reconnect/cancellation remains tested at lower levels rather than as a full process acceptance flow.

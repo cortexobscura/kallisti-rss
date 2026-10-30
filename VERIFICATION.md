@@ -1,5 +1,80 @@
 # Verification report — 2026-10-26
 
+## Live check of v0.1.0-rc.1 and rc.2 fixes — 2026-10-30
+
+### Partial owner-run live check
+
+The owner ran `v0.1.0-rc.1` (signed tag on `241dcb6`, image built locally from
+`git archive` of the tag) with `deploy/docker/compose.yaml` against their own
+Kallisti server in a dedicated `#feed-bot-testbed` channel. This is the first
+recorded run against a real server. The server's Kallisti revision was not
+recorded.
+
+Observed, from the container logs (controlled fields only) and owner reports:
+
+- `-discover` authenticated and returned the bot, text-channel and online
+  registered IDs, confirming password login, TLS and the Origin policy.
+- Two subscriptions (piaille.fr and soc.klan5.am, both RSS) polled across two
+  cycles with no failures.
+- Six new entries were queued and all six were acknowledged by nonce and
+  committed (`delivery acknowledged`). Five carried their image. One image
+  exceeded the 8 MiB media limit (`response_too_large`), and that post was sent
+  text-only with its link, as designed.
+- An allowlisted `!feed list` produced the expected reply listing both
+  subscriptions (owner screenshot); the same command from a non-admin account
+  produced no reply.
+
+Not yet exercised, per the README acceptance procedure: observing the
+no-backlog baseline (both subscriptions were already initialized in the logged
+run), an Atom item, chat add/pause/resume/remove, restart without duplicates,
+disconnect during a send with nonce reconciliation, blocked-job recovery, and
+recording the server revision.
+
+### First-start problems found during the run, fixed for rc.2
+
+- The owner's config came from the repository-root example, so
+  `password_file: ./secrets/password` resolved to `/data/secrets/password` in the
+  container and startup failed with a bare `cannot read configured secret file`.
+  Secret-file errors now name the configured path and, when relative, the
+  resolved path, never the contents (`TestSecretErrorsNamePathNotContents`).
+- `deploy/docker` defaulted to Compose project name `docker`, which collided
+  with another project kept in a `deploy/docker` directory and reported its
+  container as an orphan. The file now sets `name: kallisti-rss`, and the guide
+  warns against `--remove-orphans` and explains removing an older copy's bot
+  container.
+- With that setup running, `deploy/docker/data` (and an empty root `data/` from
+  an earlier root Compose start) is owned by UID 65532 and unreadable to the
+  developer. Every `./...` Go command failed with `open data: permission
+  denied`; the Makefile now targets `./cmd/... ./internal/...`.
+- The same directories broke `make docker` and `docker compose build`. Bisecting
+  with synthetic unreadable directories showed that BuildKit walks excluded
+  directories when the Dockerfile copies `.` and `.dockerignore` re-includes a
+  wildcard inside a subdirectory (`!sub/*.go`); adding explicit `data/` or
+  `deploy/` exclusions did not help. The Dockerfile now copies only `cmd/` and
+  `internal/` after the module files, so BuildKit walks just those paths;
+  `.dockerignore` still filters them. CI now builds the image and runs
+  `make vet` with both directories present and mode 000.
+
+Local Linux results for the rc.2 changes, run with the owner's live
+`deploy/docker/data` and root `data/` present:
+
+- New `TestSecretErrorsNamePathNotContents`: PASS (configured and resolved path
+  present; file contents absent).
+- `make check`, `make serve-demo`, `make fuzz`, `make check-deploy`: PASS;
+  coverage 38.7%/84.2%, demo pending=0 blocked=0 delivered=2, 112,221 fuzz
+  executions. Before the Makefile change, `go list ./...` failed in this tree.
+- `make docker`, `docker compose build` and `make check-compose`: PASS in the
+  real tree; the previous Dockerfile failed with `open data: permission denied`.
+  A scratch copy with both directories at mode 000 reproduced the CI step
+  (image build plus `make vet`): PASS.
+- `make security` with `GOGC=20 GOMEMLIMIT=700MiB GOMAXPROCS=2`: PASS; no called
+  vulnerabilities, gosec zero issues with five existing suppressions.
+- actionlint v1.7.12, shellcheck, both release-input scripts and
+  `git diff --check`: PASS.
+
+UNRUN: hosted CI until the pull request runs; the remaining live acceptance
+steps listed above.
+
 ## Kubernetes portable defaults — 2026-10-30
 
 The Kubernetes template previously required a CSI driver supporting
