@@ -52,7 +52,9 @@ is covered by unit tests, not by this drill. The scratch copy was deleted.
 
 Every step of the README live acceptance procedure has now been run at least
 once on rc.1 through rc.4, except a plain-container run outside Compose. The
-exact server revision is still unknown (Kallisti v0.10.0). The rc.4 `!feed add`
+owner later clarified that the test server runs Kallisti `v0.11.0`
+(`1c201c1`), not 0.10.0 as recorded in the rc.3 entry; the server exposes no
+build commit, so which checks ran on which build was not recorded. The rc.4 `!feed add`
 replies have not been reported from live use yet.
 
 ## Live check of v0.1.0-rc.3 and add replies — 2026-10-30

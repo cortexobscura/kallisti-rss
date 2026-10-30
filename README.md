@@ -4,7 +4,7 @@
 [![go version](https://img.shields.io/github/go-mod/go-version/kallisti-chat/kallisti-rss)](go.mod)
 [![license: unlicense](https://img.shields.io/badge/license-unlicense-blue)](LICENSE)
 
-Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; owner-run live checks of `v0.1.0-rc.1` through `v0.1.0-rc.4` against a Kallisti v0.10.0 server covered the acceptance procedure below on 2026-10-30, including a lost acknowledgment and blocked-job recovery (see [VERIFICATION.md](VERIFICATION.md)). The exact server revision and a plain-container run are still unrecorded. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
+Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; owner-run live checks of `v0.1.0-rc.1` through `v0.1.0-rc.4` against the owner's Kallisti server (`v0.11.0` per the owner) covered the acceptance procedure below on 2026-10-30, including a lost acknowledgment and blocked-job recovery (see [VERIFICATION.md](VERIFICATION.md)). A plain-container run is still unrecorded. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
 
 ## Start with the offline demo
 
