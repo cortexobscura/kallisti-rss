@@ -464,7 +464,7 @@ func TestCapacityRollback(t *testing.T) {
 	must(t, s.Seed([]Seed{{Channel: 1, URL: "https://example.com"}}))
 	subs, _ := s.Subscriptions()
 	must(t, s.Ingest(context.Background(), subs[0], nil))
-	_, e := s.DB.Exec(`WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<10000) INSERT INTO outbox(channel,nonce,payload) SELECT 1,'n'||x,'{}' FROM n`)
+	_, e := s.DB.Exec(`WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<10000) INSERT INTO outbox(channel,nonce,payload) SELECT 2,'n'||x,'{}' FROM n`) // other channels fill the global cap
 	must(t, e)
 	if s.Ingest(context.Background(), subs[0], []Entry{{ID: "fresh", Title: "fresh"}}) == nil {
 		t.Fatal("capacity ignored")

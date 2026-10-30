@@ -161,44 +161,91 @@ func enqueue(tx *sql.Tx, ch int64, p Payload) error {
 	_, e = tx.Exec("INSERT INTO outbox(channel,nonce,payload) VALUES(?,?,?)", ch, nonce(), string(b))
 	return e
 }
+
+// MaxNewPerPoll bounds posts one subscription can queue per poll, and
+// ChannelPendingLimit bounds unresolved jobs per channel, so one feed that
+// rewrites its entry IDs cannot flood a channel or exhaust the global outbox
+// for other channels. Excess new entries stay unseen (deferred, not discarded)
+// and are reconsidered oldest-first on later polls while still in the feed.
+const (
+	MaxNewPerPoll       = 25
+	ChannelPendingLimit = 1000
+	OutboxPendingLimit  = 10000
+)
+
+type IngestResult struct{ Queued, Deferred int }
+
 func (s *Store) Ingest(ctx context.Context, sub Subscription, entries []Entry) error {
+	_, e := s.IngestCounts(ctx, sub, entries)
+	return e
+}
+
+// IngestCounts records seen entries and queues new posts in one transaction.
+// The first successful snapshot only records a baseline.
+func (s *Store) IngestCounts(ctx context.Context, sub Subscription, entries []Entry) (IngestResult, error) {
+	var r IngestResult
 	tx, e := s.DB.BeginTx(ctx, nil)
 	if e != nil {
-		return e
+		return r, e
 	}
 	defer tx.Rollback()
 	var initialized, paused, deleted bool
 	if e = tx.QueryRow("SELECT initialized,paused,deleted FROM subscriptions WHERE id=?", sub.ID).Scan(&initialized, &paused, &deleted); e != nil {
-		return e
+		return r, e
 	}
 	if paused || deleted {
-		return nil
+		return r, nil
 	}
-	var pending int
+	var pending, channelPending int
 	if e = tx.QueryRow("SELECT count(*) FROM outbox WHERE state IN ('pending','blocked')").Scan(&pending); e != nil {
-		return e
+		return r, e
 	}
+	if e = tx.QueryRow("SELECT count(*) FROM outbox WHERE channel=? AND state IN ('pending','blocked')", sub.Channel).Scan(&channelPending); e != nil {
+		return r, e
+	}
+	room := min(MaxNewPerPoll, ChannelPendingLimit-channelPending)
+	deferred := map[string]bool{}
 	for i := len(entries) - 1; i >= 0; i-- {
 		x := entries[i]
-		r, e := tx.Exec("INSERT OR IGNORE INTO seen(sub,item) VALUES(?,?)", sub.ID, x.ID)
-		if e != nil {
-			return e
-		}
-		n, _ := r.RowsAffected()
-		if n > 0 && initialized {
-			if pending >= 10000 {
-				return errors.New("outbox capacity reached; ingest rolled back")
+		if initialized {
+			var seen int
+			e = tx.QueryRow("SELECT count(*) FROM seen WHERE sub=? AND item=?", sub.ID, x.ID).Scan(&seen)
+			if e != nil {
+				return r, e
 			}
+			if seen > 0 {
+				continue
+			}
+			if r.Queued >= room {
+				if !deferred[x.ID] {
+					deferred[x.ID] = true
+					r.Deferred++
+				}
+				continue
+			}
+			if pending >= OutboxPendingLimit {
+				return IngestResult{}, errors.New("outbox capacity reached; ingest rolled back")
+			}
+		}
+		res, e := tx.Exec("INSERT OR IGNORE INTO seen(sub,item) VALUES(?,?)", sub.ID, x.ID)
+		if e != nil {
+			return r, e
+		}
+		if n, _ := res.RowsAffected(); n > 0 && initialized {
 			if e = enqueue(tx, sub.Channel, Payload{Text: Text(x), Images: entryImages(x, sub.MaxImages)}); e != nil {
-				return e
+				return r, e
 			}
 			pending++
+			r.Queued++
 		}
 	}
 	if _, e = tx.Exec("UPDATE subscriptions SET initialized=1 WHERE id=?", sub.ID); e != nil {
-		return e
+		return r, e
 	}
-	return tx.Commit()
+	if e = tx.Commit(); e != nil {
+		return IngestResult{}, e
+	}
+	return r, nil
 }
 func (s *Store) Next() (*Job, error) {
 	var j Job
