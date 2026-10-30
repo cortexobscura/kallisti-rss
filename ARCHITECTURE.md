@@ -98,7 +98,8 @@ Deployment templates also live in [deploy/docker](deploy/docker/README.md) and
 [deploy/kubernetes](deploy/kubernetes/README.md). The Docker layout builds the
 root Dockerfile and preserves the same runtime paths; the root Compose file
 remains compatible with existing installs. Kubernetes uses a single-replica
-Recreate Deployment, a ReadWriteOncePod PVC, generated configuration and an
+Recreate Deployment, a ReadWriteOnce PVC, a restricted Pod Security namespace,
+an optional public-egress NetworkPolicy component, generated configuration and an
 operator-managed Secret. No runtime listener or health probe is added.
 `make check-deploy` validates example configs, Compose and Kubernetes schemas;
 `make check-compose` runs the Docker layout offline against a prebuilt image;

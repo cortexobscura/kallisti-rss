@@ -8,14 +8,22 @@ No Helm chart, image publication or cluster provisioning is included.
 
 - `kubectl` with Kustomize support, and a cluster permitting the supplied nonroot
   security context and resource limits.
-- A CSI storage class supporting `ReadWriteOncePod`, filesystem ownership via
-  `fsGroup`, and SQLite WAL/locking on a local filesystem backed by block storage.
-  NFS/SMB and other shared network filesystems are unsupported. Set
-  `storageClassName` in `pvc.yaml` if the default class is unsuitable.
+- A storage class providing a local filesystem with SQLite WAL/locking semantics
+  and `fsGroup` ownership: node-local storage such as Rancher local-path or
+  OpenEBS hostpath, or CSI block storage. NFS/SMB and other shared network
+  filesystems are unsupported. The PVC names no class, so it uses the cluster
+  default; set `storageClassName` in `pvc.yaml` when there is no default class or
+  it is unsuitable, otherwise the claim stays `Pending`.
 - One replica only, with `Recreate` updates. Do not add autoscaling or force-delete
-  pods while the old process might still run. `ReadWriteOncePod` restricts the PVC
-  to one pod; `ReadWriteOnce` alone only restricts it to one node. See the
+  pods while the old process might still run. The PVC uses `ReadWriteOnce`, which
+  every provisioner supports but which only limits the volume to one node; the
+  single replica, `Recreate` and the database file lock keep one writer. On a CSI
+  driver that supports it, `ReadWriteOncePod` additionally limits the claim to one
+  pod; local-path and hostpath provisioners are not CSI and cannot provide it. With
+  node-local storage the pod is pinned to the node holding the volume. See the
   [Kubernetes storage documentation](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
+- The namespace enforces the `restricted` Pod Security Standard, which the pod
+  already satisfies. Pin the `*-version` labels if your cluster policy requires it.
 
 The PVC requests 1 GiB; size it for retained history and monitor usage. Check the
 storage class reclaim policy and arrange backups before storing production state.
@@ -27,7 +35,18 @@ the bot.
 
 Build the root Dockerfile and make the image available to your cluster through
 your own registry or local-cluster image loader. Set `images` in
-`kustomization.yaml` to that image, preferably an immutable tag or digest. The
+`kustomization.yaml` to that image, preferably an immutable tag or digest. With
+`imagePullPolicy: IfNotPresent`, reusing a tag such as `local` does not roll out a
+rebuilt image, so give every build a unique tag or pin the digest:
+
+```yaml
+images:
+  - name: kallisti-rss
+    newName: registry.example.com/you/kallisti-rss
+    newTag: git-abc1234
+    digest: sha256:<digest from docker push>
+```
+ The
 default `kallisti-rss:local` requires loading the image onto your cluster nodes;
 it is not a public registry release. Configure `imagePullSecrets` in the pod spec
 if your registry requires them.
@@ -79,10 +98,23 @@ production listener or health endpoint. Pod readiness only establishes that the
 process started, not server authentication, healthy feeds or successful delivery.
 Inspect logs and complete the [live acceptance procedure](../../README.md#before-considering-a-deployment-verified).
 
-The NetworkPolicy denies inbound traffic when enforced by the cluster CNI. It
-does not restrict egress: DNS, Kallisti HTTPS/WSS and public feed/media hosts must
-be reachable. Clusters with existing egress restrictions need appropriate allow
-rules; dynamic public feeds cannot be captured by a fixed destination list here.
+The NetworkPolicy denies inbound traffic when enforced by the cluster CNI. By
+default it does not restrict egress: DNS, Kallisti HTTPS/WSS and public feed/media
+hosts must be reachable. The optional `components/egress-public` component limits
+egress to cluster DNS (`k8s-app: kube-dns` in `kube-system`) and public IPv4 on
+TCP 80/443, excluding private, tailnet (100.64.0.0/10), link-local and reserved
+ranges as a second layer behind the application's own public-only checks. Enable
+it by adding to `kustomization.yaml`:
+
+```yaml
+components:
+  - components/egress-public
+```
+
+Do not enable it when the Kallisti server or a feed is only reachable on a
+private, tailnet or IPv6 address, or when your DNS pods carry different labels;
+adjust a copy instead. Dynamic public feeds cannot be captured by a fixed
+destination list.
 The application's public-only feed policy still applies. Node-level PID and log
 retention limits are cluster responsibilities.
 
