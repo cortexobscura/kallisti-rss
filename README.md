@@ -1,5 +1,9 @@
 # kallisti-rss
 
+[![ci](https://github.com/kallisti-chat/kallisti-rss/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kallisti-chat/kallisti-rss/actions/workflows/ci.yml)
+[![go version](https://img.shields.io/github/go-mod/go-version/kallisti-chat/kallisti-rss)](go.mod)
+[![license: unlicense](https://img.shields.io/badge/license-unlicense-blue)](LICENSE)
+
 Go RSS/Atom bot for Kallisti text channels, with public-feed image attachments, durable SQLite subscriptions, and in-chat management. This is a v0.1 release candidate with passing local fixture checks and owner-reported live use. Local Docker fixtures and hosted CI for implementation commit `28f1a0d` pass; a recorded upstream runtime acceptance run remains a release gate. Compatibility targets Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
 
 ## Start with the offline demo
