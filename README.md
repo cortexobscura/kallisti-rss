@@ -122,7 +122,13 @@ examples and rendered Kubernetes schemas using synthetic/public inputs. This
 requires Docker Compose and Go; pinned Kustomize/kubeconform tools and schemas
 may be downloaded. It does not contact a cluster or start a production service.
 
-The original build report did not execute Docker; see [VERIFICATION.md](VERIFICATION.md) for later local results. The GitHub workflow in `.github/workflows/ci.yml` runs `make release-check`, validates the example config and compatibility binary, validates Compose, and builds/runs the demo image with external networking disabled for the demo. Actions use pinned commits and read-only repository permissions on GitHub-hosted runners. No image publication or deployment is configured, and no Gitea workflow is supplied. A successful hosted run is recorded in VERIFICATION.md; it does not verify live interoperability or production mounts. Required-check branch protection must be configured by the repository owner.
+Run `make check-compose` after building the image to exercise
+`deploy/docker/compose.yaml` offline: synthetic config, networking disabled,
+offline actions through `docker compose run`, the database lock and SIGTERM
+shutdown. Both Compose files pin `-config /config/config.yaml` in the
+entrypoint, so `docker compose run feedbot -status` reads the mounted config.
+
+The original build report did not execute Docker; see [VERIFICATION.md](VERIFICATION.md) for later local results. The GitHub workflow in `.github/workflows/ci.yml` runs `make release-check`, validates the example config and compatibility binary, validates Compose, runs the offline Compose runtime check, and builds/runs the demo image with external networking disabled for the demo. Actions use pinned commits and read-only repository permissions on GitHub-hosted runners. No image publication or deployment is configured, and no Gitea workflow is supplied. A successful hosted run is recorded in VERIFICATION.md; it does not verify live interoperability or production mounts. Required-check branch protection must be configured by the repository owner.
 
 Before building, run `sh scripts/check-release-inputs.sh` with Git, Docker and Buildx available. It verifies Git exclusions and Docker's build-context filtering using synthetic files. `.dockerignore` admits only Go source, module files and license notices; configuration, credentials, databases and backups must stay outside the build context. Preserve the dotfiles when copying the source. `.gitignore` protects conventional untracked operational paths, not already tracked files or every custom filename. Review all staged content before publishing. Base images still use tags rather than pinned digests.
 
