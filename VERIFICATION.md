@@ -1,5 +1,49 @@
 # Verification report — 2026-10-26
 
+## Live check of v0.1.0-rc.4: plain-container run — 2026-10-31
+
+The owner ran the `kallisti-rss:v0.1.0-rc.4` image with plain `docker run`
+instead of Compose, using the live config, password file and data directory
+from `deploy/docker`. The flags reproduced the Compose hardening: `--init`,
+`--user 65532:65532`, `--read-only`, `--cap-drop=ALL`,
+`--security-opt=no-new-privileges:true`, `--pids-limit=64`, `--memory=512m`,
+`--cpus=1`, a 32 MiB `/tmp` tmpfs and `--stop-timeout 30`. Config and secret
+were bind-mounted read-only and the image was given `-config
+/config/config.yaml` directly. No restart policy was set.
+
+Observed:
+
+- 16:16:31 (container log time): `feed poll cycle completed succeeded=2
+  failed=0`.
+- Jobs 45 to 67 logged `delivery acknowledged`. Jobs 57 and 60 logged
+  `image skipped before first send` at stage `image_decode` and were sent
+  text-only; job 64 carried 3 attachments.
+- A second process against the same data directory stopped with
+  `database already in use`.
+- `docker inspect` reported `user=65532:65532 ro=true capdrop=[ALL]
+  [no-new-privileges:true]`.
+- `docker stop` returned in 0.248 s with exit code 0.
+
+The Compose container had already been removed before the run, so the bot had
+been down for an unknown period. The 23 posts are taken to be entries published
+during that gap, all within the 25-per-poll limit; this was inferred from the
+new job IDs and was not checked against the feeds. No duplicate post was
+reported.
+
+Afterwards the bot was first started with `docker compose up` from the
+repository root. That used the root `compose.yaml` (image `kallisti-rss:local`,
+mount source `./config.container.yaml`). The source did not exist, so Docker
+created it as an empty directory and the bot restart-looped on
+`read /config/config.yaml: is a directory`, failing before opening the
+database. The owner removed that container and directory and started the
+`deploy/docker` service; at 20:05:43 it logged `succeeded=2 failed=0` on
+`kallisti-rss:v0.1.0-rc.4`. Both Compose files use the project name
+`kallisti-rss`, which makes the two easy to confuse.
+
+With this run, every step of the README live acceptance procedure has been
+run at least once on rc.1 through rc.4. The rc.4 `!feed add` replies have
+still not been reported from live use.
+
 ## Live check of v0.1.0-rc.4: lost acknowledgment and blocked recovery — 2026-10-30
 
 The bot was switched from rc.3 to `v0.1.0-rc.4` (signed tag on `c3f1ad7`, image
