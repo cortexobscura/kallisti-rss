@@ -7,9 +7,9 @@ Go RSS/Atom bot for Kallisti text channels. It posts new feed entries with
 their images, keeps subscriptions in SQLite, and is managed from chat.
 
 **Status:** v0.1 release candidate. Offline checks and hosted CI pass, and the
-owner ran the live acceptance procedure against a Kallisti `v0.11.0` server
-on 2026-10-30 (see [VERIFICATION.md](VERIFICATION.md)); the separate
-plain-container check is not yet recorded. It targets
+owner ran the full live acceptance procedure against a Kallisti `v0.11.0`
+server on 2026-10-30 and 2026-10-31 (see [VERIFICATION.md](VERIFICATION.md)).
+It targets
 Kallisti commit `d8fd12dd2a6f1483c8fdee187ebed827b3bd2efc`, not generic Murmur.
 
 ## Quick start: offline demo
