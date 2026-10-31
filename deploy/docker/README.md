@@ -84,7 +84,8 @@ docker compose run --rm --no-deps -T feedbot -discover
 
 Have intended managers online, verify them through your normal moderation
 workflow, then set `admin_ids`. An empty list disables chat management. See the
-[root README](../../README.md#configure-a-real-test-server) for details.
+[root README](../../README.md#configure-a-real-test-server) and
+[OPERATIONS.md](../../OPERATIONS.md#credentials-login-and-discovery) for details.
 
 ## Build, validate and start
 
